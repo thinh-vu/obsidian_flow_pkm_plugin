@@ -1,0 +1,36 @@
+{
+	"name": "obsidian-flow",
+	"version": "1.0.0",
+	"description": "FLOW PKM System — organize your vault with Capture, Track, Forge, Blueprint, Exhibit, Vault structure.",
+	"main": "main.js",
+	"type": "module",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && mkdir -p ../.obsidian/plugins/obsidian-flow && cp main.js manifest.json styles.css ../.obsidian/plugins/obsidian-flow/",
+		"version": "node version-bump.mjs && git add manifest.json versions.json",
+		"lint": "eslint ."
+	},
+	"keywords": [
+		"obsidian",
+		"pkm",
+		"flow",
+		"productivity"
+	],
+	"author": "Thinh Vu <https://github.com/thinh-vu>",
+	"license": "GPL-3.0",
+	"devDependencies": {
+		"@eslint/js": "9.30.1",
+		"@types/node": "^16.11.6",
+		"esbuild": "0.25.5",
+		"eslint-plugin-obsidianmd": "0.1.9",
+		"globals": "14.0.0",
+		"jiti": "2.6.1",
+		"tslib": "2.4.0",
+		"typescript": "^5.8.3",
+		"typescript-eslint": "8.35.1"
+	},
+	"dependencies": {
+		"echarts": "^6.0.0",
+		"obsidian": "latest"
+	}
+}

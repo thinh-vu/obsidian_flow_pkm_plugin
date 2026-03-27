@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-flow",
+	"name": "FLOW PKM System",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "FLOW PKM System — organize your vault with Capture, Track, Forge, Blueprint, Exhibit, Vault structure.",
+	"author": "Thinh Vu",
+	"authorUrl": "https://github.com/thinh-vu",
+	"isDesktopOnly": false
+}

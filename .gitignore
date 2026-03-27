@@ -1,0 +1,77 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build output
+dist/
+main.js
+styles.css
+# (If styles.css is generated, ignore it. If it's a source file, don't ignore it.)
+# Based on AGENTS.md, main.js and manifest.json are required release artifacts. 
+# "Do not commit build artifacts: Never commit node_modules/, main.js, or other generated files"
+# However, manifest.json is a source file in many Obsidian plugins. 
+# But main.js is definitely a build artifact.
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.flakes/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv
+venv/
+ENV/
+env/
+python_env/
+.pytest_cache/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+.hypothesis/
+.nox/
+.tox/
+.spyderproject
+.spyproject
+.ipynb_checkpoints
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Obsidian specific
+.obsidian/
