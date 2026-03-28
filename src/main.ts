@@ -65,6 +65,24 @@ export default class FlowPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: "flow-open-dashboard-stats",
+			name: "Open FLOW Dashboard (Statistics)",
+			callback: async () => {
+				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
+				new DashboardModal(this.app, this.settings, "statistics").open();
+			},
+		});
+
+		this.addCommand({
+			id: "flow-open-dashboard-navigator",
+			name: "Open FLOW Dashboard (Navigator)",
+			callback: async () => {
+				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
+				new DashboardModal(this.app, this.settings, "navigator").open();
+			},
+		});
+
+		this.addCommand({
 			id: "flow-detect-preset",
 			name: "Detect current preset from vault folders",
 			callback: async () => {

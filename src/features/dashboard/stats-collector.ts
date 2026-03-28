@@ -257,7 +257,41 @@ export function collectVaultStats(
 		// Skip non-.md files from here
 		if (file.extension !== "md") continue;
 
-		// Classify into FLOW role
+		// Classify into FLOW role (delayed so we can extract global metrics first)
+		
+		// ── GLOBAL MOOD & FEELING TRACKING ──
+		const preCache = app.metadataCache.getFileCache(file);
+		if (preCache?.frontmatter) {
+			const fmRaw = preCache.frontmatter;
+			const moodKey = Object.keys(fmRaw).find(k => k.toLowerCase() === "mood");
+			const rawMood = moodKey ? fmRaw[moodKey] : undefined;
+			
+			const feelingKey = Object.keys(fmRaw).find(k => k.toLowerCase() === "feeling" || k.toLowerCase() === "feelings");
+			const rawFeeling = feelingKey ? fmRaw[feelingKey] : undefined;
+
+			if (rawMood !== undefined && rawMood !== null) {
+				const moodNum = Number(rawMood);
+				if (!isNaN(moodNum)) {
+					const dateMatch = file.basename.match(/\d{4}-\d{2}-\d{2}/);
+					const dStr = dateMatch ? dateMatch[0] : (new Date(file.stat.ctime).toISOString().split("T")[0] as string);
+					stats.moodByDate[dStr] = moodNum;
+				}
+			}
+			if (rawFeeling !== undefined && rawFeeling !== null) {
+				const feelings: string[] = Array.isArray(rawFeeling) ? rawFeeling : [String(rawFeeling)];
+				const fdMatch = file.basename.match(/\d{4}-\d{2}-\d{2}/);
+				const fDate = fdMatch ? fdMatch[0] : (new Date(file.stat.ctime).toISOString().split("T")[0] as string);
+				for (const f of feelings) {
+					const text = String(f).trim().toLowerCase();
+					if (text) {
+						stats.feelingCounts[text] = (stats.feelingCounts[text] || 0) + 1;
+						if (!stats.feelingByDate[fDate]) stats.feelingByDate[fDate] = [];
+						stats.feelingByDate[fDate].push(text);
+					}
+				}
+			}
+		}
+
 		const role = classifyFile(file.path, folderMap);
 		if (!role) continue; // Not a FLOW file
 
@@ -404,32 +438,10 @@ export function collectVaultStats(
 					}
 				}
 
-				// Mood & Feeling (Track only)
-				if (role === FlowRole.TRACK) {
-					const rawMood = fm.mood;
-					const rawFeeling = fm.feeling;
-					if (rawMood !== undefined && rawMood !== null) {
-						const moodNum = Number(rawMood);
-						if (!isNaN(moodNum)) {
-							const dateMatch = file.basename.match(/\d{4}-\d{2}-\d{2}/);
-							const dStr = dateMatch ? dateMatch[0] : (new Date(file.stat.ctime).toISOString().split("T")[0] as string);
-							stats.moodByDate[dStr] = moodNum;
-						}
-					}
-					if (rawFeeling !== undefined && rawFeeling !== null) {
-						rs.trackHasFeeling++;
-						const feelings: string[] = Array.isArray(rawFeeling) ? rawFeeling : [String(rawFeeling)];
-						const fdMatch = file.basename.match(/\d{4}-\d{2}-\d{2}/);
-						const fDate = fdMatch ? fdMatch[0] : (new Date(file.stat.ctime).toISOString().split("T")[0] as string);
-						for (const f of feelings) {
-							const text = String(f).trim().toLowerCase();
-							if (text) {
-								stats.feelingCounts[text] = (stats.feelingCounts[text] || 0) + 1;
-								if (!stats.feelingByDate[fDate]) stats.feelingByDate[fDate] = [];
-								stats.feelingByDate[fDate].push(text);
-							}
-						}
-					}
+				// Track Vault Health (Journaling score)
+				const feelingKey = Object.keys(fm).find(k => k.toLowerCase() === "feeling" || k.toLowerCase() === "feelings");
+				if (feelingKey && fm[feelingKey] !== undefined && fm[feelingKey] !== null) {
+					if (role === FlowRole.TRACK) rs.trackHasFeeling++;
 				}
 			}
 

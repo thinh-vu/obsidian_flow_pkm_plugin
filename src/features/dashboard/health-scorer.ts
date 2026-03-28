@@ -346,20 +346,7 @@ function scoreVault(rs: RoleStats | undefined, stats: VaultStats, settings: Flow
 	const criteria = [c1, c2, c3, c4, c5];
 	const totalScore = clamp(criteria.reduce((a, c) => a + c.score, 0), 0, 100);
 
-	// Generate Evaluation Scenario
-	let evaluationText = "Vault của bạn đang cần được tổ chức lại.";
-	if (totalScore >= 71) {
-		if (namingPts >= 18) evaluationText = "Rất tuyệt! Bạn đang sử dụng hệ thống số định danh (Zettel/JD) và có tính kỷ luật cao. Hãy duy trì nhịp điệu này.";
-		else evaluationText = "Vault được tổ chức rất tốt và mạch lạc. Dung lượng và cấu trúc thư mục đang ở trạng thái tối ưu.";
-	} else if (totalScore >= 41) {
-		if (consistencyRate < 0.5) evaluationText = "Cấu trúc Vault khá ổn, nhưng cách đặt tên file chưa nhất quán. Hãy chọn 1 quy chuẩn (VD: luôn dùng khoảng trắng hoặc gạch ngang) để dễ tìm kiếm.";
-		else evaluationText = "Vault đang hoạt động tốt. Bạn có thể cải thiện thêm bằng cách giảm bớt các thư mục quá sâu hoặc dọn dẹp các tệp mồ côi.";
-	} else {
-		if (rs && rs.subfolderCount === 0) evaluationText = "Vault hiện tại đang thiếu cấu trúc phân tầng cơ bản. Hãy cân nhắc gom nhóm các ghi chú vào các thư mục theo chủ đề.";
-		else evaluationText = "Sức khỏe Vault ở mức cơ bản. Hãy ưu tiên xử lý các tệp kích thước lớn và dọn dẹp cấu trúc thư mục để hệ thống chạy nhanh hơn.";
-	}
-
-	return { totalScore, level: toLevel(totalScore, 100), criteria, evaluationText };
+	return { totalScore, level: toLevel(totalScore, 100), criteria };
 }
 
 // ── Public API ──────────────────────────────────────────────────────────

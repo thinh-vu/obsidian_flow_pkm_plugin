@@ -10,7 +10,7 @@ const LABELS = {
 	vi: {
 		blueprint: "Bản thiết kế", blueprintBadge: "Trung tâm",
 		blueprintDesc: "Lĩnh vực và sứ mệnh cốt lõi.",
-		activeMissions: "Nhiệm vụ",
+		activeMissions: "Sứ mệnh",
 		capture: "Thu thập", captureDesc: "Nắm bắt thông tin & ý tưởng mới.",
 		totalNotes: "Tổng ghi chú", linked: "Đã liên kết", rawNotes: "Ghi chú thô",
 		track: "Theo dõi", trackDesc: "Nhật ký, thời gian & nhiệm vụ.",
@@ -20,7 +20,7 @@ const LABELS = {
 		exhibit: "Trưng bày", exhibitDesc: "Nội dung chắt lọc sẵn sàng công bố.",
 		totalContent: "Nội dung", topTags: "Top:",
 		vault: "Kho lưu trữ", vaultDesc: "Lưu trữ dài hạn & dự phòng.",
-		totalFiles: "Tổng file", size: "Dung lượng", orphan: "Mồ côi", wasted: "Lãng phí",
+		totalFiles: "Tổng file", size: "Dung lượng", orphan: "Ghi chú mồ côi", wasted: "File lớn",
 		healthScore: "Sức khoẻ", overallHealth: "Sức khoẻ tổng thể Vault",
 		levelBasic: "Cơ bản", levelGood: "Khá", levelAdvanced: "Nâng cao",
 		clickForDetail: "Nhấn vào điểm sức khoẻ của từng card để xem chi tiết.",
@@ -67,6 +67,7 @@ export function renderFlowProgressionTab(
 	container.empty();
 	container.addClass("flow-progression-tab");
 	container.style.flexDirection = "column"; // Fix: force horizontal row for summary vs grid
+	container.style.overflowY = "auto";
 	injectCSS();
 	const L = getLabels(settings);
 
@@ -88,23 +89,36 @@ export function renderFlowProgressionTab(
 		[FlowRole.EXHIBIT]: L.exhibit, [FlowRole.VAULT]: L.vault,
 	};
 
-	const evalPrefix = L.healthScore === "Sức khoẻ"
-		? "Điểm tổng thể được trung bình từ 6 tiến trình luân chuyển tri thức của FLOW. "
-		: "The overall score is averaged across the 6 knowledge flow stages. ";
+	const naming = stats.namingConventions;
+	const totalNamed = naming.zettelkasten + naming.natural + naming.kebab + naming.snake + naming.camel + naming.pascal + naming.other;
+	const maxStyleCount = Math.max(naming.zettelkasten, naming.natural, naming.kebab, naming.snake, naming.camel, naming.pascal);
+	const consistencyRate = totalNamed > 0 ? maxStyleCount / totalNamed : 0;
 
-	let evalSuffix = "";
+	let namingPts = 0;
+	if (consistencyRate > 0.8) namingPts = 15;
+	else if (consistencyRate > 0.5) namingPts = 10;
+	else namingPts = 5;
+	if (totalNamed > 0 && naming.zettelkasten > totalNamed * 0.1) namingPts += 5;
+
+	const isVi = L.healthScore === "Sức khoẻ";
+	let evaluationText = "";
+
 	if (overallScore >= 71) {
-		evalSuffix = L.healthScore === "Sức khoẻ" ? "Hệ thống tri thức của bạn đang cực kỳ vững chắc và hoạt động mượt mà." : "Your knowledge system is highly solid and operating smoothly.";
+		if (namingPts >= 18) evaluationText = isVi ? "Rất tuyệt! Hệ thống số định danh (Zettel/JD) đang được ứng dụng tốt. Hãy duy trì nhịp điệu này." : "Excellent! Your Zettelkasten/JD naming system is well applied. Keep it up.";
+		else evaluationText = isVi ? "Vault được tổ chức mạch lạc. Dung lượng và cấu trúc thư mục đang ở trạng thái tối ưu." : "The Vault is well-organized. Size and folder structure are highly optimized.";
 	} else if (overallScore >= 41) {
-		evalSuffix = L.healthScore === "Sức khoẻ" ? "Hệ thống khá ổn định nhưng một số luồng thông tin vẫn cần được tinh gọn hơn." : "The system is quite stable, but some flows still need streamlining.";
+		if (consistencyRate < 0.5) evaluationText = isVi ? "Cấu trúc khá ổn, nhưng cách đặt tên file chưa nhất quán. Hãy chọn 1 quy chuẩn (VD: luôn dùng khoảng trắng) để dễ tìm kiếm." : "Structure is fair, but file naming lacks consistency. Adopt a single convention (e.g., spaces) for clarity.";
+		else evaluationText = isVi ? "Vault đang hoạt động tốt. Có thể cải thiện bằng cách giảm bớt các thư mục quá sâu hoặc dọn dẹp tệp mồ côi." : "The Vault is functioning well. Improve it by reducing overly deep folders or cleaning orphaned files.";
 	} else {
-		evalSuffix = L.healthScore === "Sức khoẻ" ? "Hệ thống còn khá sơ khai hoặc đang gặp vấn đề tắt nghẽn. Hãy cải thiện các tiến trình có điểm thấp." : "The system is basic or facing bottlenecks. Improve the low-scoring stages.";
+		const totalSubfolders = Object.values(stats.roleStats).reduce((acc, rs) => acc + (rs?.subfolderCount || 0), 0);
+		if (totalSubfolders === 0) evaluationText = isVi ? "Vault đang thiếu cấu trúc phân tầng cơ bản. Hãy cân nhắc gom nhóm ghi chú vào thư mục theo chủ đề." : "Vault lacks basic hierarchy. Consider grouping notes into thematic folders.";
+		else evaluationText = isVi ? "Sức khỏe ở mức cơ bản. Hãy ưu tiên xử lý file kích thước lớn hoặc dọn dẹp cấu trúc thư mục." : "Health is basic. Prioritize handling large files and cleaning up folder structure.";
 	}
 
 	const overallHealthRes: StageHealthResult = {
 		totalScore: overallScore,
 		level: overallLevel as "basic" | "good" | "advanced",
-		evaluationText: evalPrefix + evalSuffix,
+		evaluationText: evaluationText,
 		criteria: stageOrder.map(role => {
 			const hs = healthScores[role];
 			return {
@@ -149,6 +163,12 @@ export function renderFlowProgressionTab(
 		detailPanel.style.display = "flex";
 		detailPanel.style.flexDirection = "column";
 		detailPanel.style.gap = "8px";
+
+		if (role) {
+			evalTextWrap.style.display = "none";
+		} else {
+			evalTextWrap.style.display = "block";
+		}
 
 		const isVi = L.healthScore === "Sức khoẻ";
 		const stageName = role ? (stageNames[role] || role) : L.vault;
@@ -217,22 +237,28 @@ export function renderFlowProgressionTab(
 				const list = body.createDiv();
 				list.style.marginTop = "12px";
 				const header = list.createDiv();
-				header.style.cssText = "display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.72em; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;";
-				const hIcon = header.createSpan();
+				header.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 0.72em; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--background-modifier-border);";
+
+				const leftH = header.createSpan();
+				leftH.style.cssText = "display: flex; align-items: center; gap: 4px;";
+				const hIcon = leftH.createSpan();
 				setIcon(hIcon, "link");
 				(hIcon.querySelector("svg") as SVGElement)?.setAttribute("width", "12");
 				(hIcon.querySelector("svg") as SVGElement)?.setAttribute("height", "12");
-				header.createSpan({ text: L.healthScore === "Sức khoẻ" ? "Kế Hoạch Nổi Bật" : "Top Cited" });
+				leftH.createSpan({ text: L.healthScore === "Sức khoẻ" ? "Sứ Mệnh Nổi Bật" : "Top Missions" });
+
+				const rightH = header.createSpan({ text: "Links" });
+				rightH.style.cssText = "flex-shrink: 0; text-align: right;";
 
 				for (const file of top5) {
 					const row = list.createDiv();
-					row.style.cssText = "display:flex; justify-content:space-between; align-items:center; font-size: 0.82em; padding: 3px 0; gap: 8px;";
+					row.style.cssText = "display:flex; justify-content:space-between; align-items:center; font-size: 0.82em; padding: 3px 0; gap: 8px; width: 100%;";
 
 					const nameEl = row.createSpan({ text: file.name.replace(/\.md$/i, "") });
-					nameEl.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-muted); flex: 1;";
+					nameEl.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-muted); flex: 1; min-width: 0;";
 
 					const badge = row.createSpan({ text: String(file.linkCount) });
-					badge.style.cssText = "font-weight: bold; color: var(--text-normal); font-size: 0.9em; flex-shrink: 0; min-width: 14px; text-align: right;";
+					badge.style.cssText = "font-weight: bold; color: var(--text-normal); font-size: 0.9em; flex-shrink: 0; min-width: 24px; text-align: right;";
 				}
 			}
 		});
@@ -282,7 +308,13 @@ export function renderFlowProgressionTab(
 				hm.createEl("span", { text: L.heatLabel, cls: "fp-heat-label" });
 				const chips = hm.createDiv("fp-heat-chips");
 				for (const [name, temp] of Object.entries(rs.forgeHeatmap)) {
-					const chip = chips.createEl("span", { text: name, cls: `fp-chip fp-chip-${temp}` });
+					let shortName = name.replace(/FLOW system/gi, "").trim();
+					if (shortName.startsWith("- ")) shortName = shortName.substring(2).trim();
+					if (!shortName) shortName = "FLOW System";
+					if (shortName.length > 15) shortName = shortName.substring(0, 13) + "...";
+
+					const chip = chips.createEl("span", { text: shortName, cls: `fp-chip fp-chip-${temp}` });
+					chip.title = name;
 					const icoEl = chip.createSpan({ cls: "fp-chip-icon" });
 					if (temp === "hot") setIcon(icoEl, "flame");
 					else if (temp === "warm") setIcon(icoEl, "sun");
@@ -342,9 +374,7 @@ function renderCard(
 
 	// Header row
 	const header = card.createDiv("fp-card-header");
-	if (cls === "fp-blueprint") {
-		header.style.justifyContent = "center";
-	}
+
 	const iconEl = header.createSpan("fp-card-icon");
 	setIcon(iconEl, icon);
 	header.createEl("h3", { text: title, cls: "fp-card-title" });
@@ -435,6 +465,7 @@ function injectCSS() {
 			border: 1px solid var(--background-modifier-border);
 			background: var(--background-secondary);
 			overflow: hidden;
+			flex-shrink: 0;
 		}
 		.fp-summary-header {
 			display: flex; align-items: center; gap: 14px;
@@ -517,6 +548,7 @@ function injectCSS() {
 			align-items: stretch;
 			overflow-x: auto; -webkit-overflow-scrolling: touch;
 			padding: 0 8px 24px; gap: 0;
+			flex-shrink: 0;
 		}
 		.fp-col { display: flex; flex-direction: column; justify-content: center; flex: 1 1 0; min-width: 0; box-sizing: border-box; }
 		.fp-col-single { flex: 1 1 0; }
@@ -547,11 +579,12 @@ function injectCSS() {
 
 		/* Blueprint special */
 		.fp-blueprint {
-			text-align: center;
 			background: linear-gradient(135deg, var(--background-primary), var(--background-secondary));
 			border: 2px solid ${BRAND.teal};
 		}
 		.fp-blueprint .fp-card-header { justify-content: center; }
+		.fp-blueprint .fp-card-title { flex: 0 1 auto; }
+		.fp-blueprint .fp-card-desc { text-align: center; }
 		.fp-vault { border-style: dashed; }
 
 		/* Header */
