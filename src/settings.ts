@@ -2,7 +2,7 @@
  * Modular Settings tab for the FLOW plugin.
  */
 
-import { App, PluginSettingTab, setIcon } from "obsidian";
+import { App, PluginSettingTab, Setting, setIcon } from "obsidian";
 import type FlowPlugin from "./main";
 import { FLOW_ROLE_ORDER, FlowRole } from "./types";
 import { getSettingsLabels } from "./i18n/settings-labels";
@@ -67,7 +67,7 @@ export class FlowSettingTab extends PluginSettingTab {
 		const L = getSettingsLabels(this.plugin.settings);
 
 		// ── Header ─────────────────────────────────────────
-		containerEl.createEl("h2", { text: L.settingsTitle });
+		new Setting(containerEl).setName(L.settingsTitle).setHeading();
 
 		// ── Tab bar ────────────────────────────────────────
 		const tabBar = containerEl.createEl("div", { cls: "flow-tabs" });

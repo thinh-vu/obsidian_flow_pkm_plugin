@@ -63,18 +63,14 @@ export class TagTaxonomySuggest extends EditorSuggest<TagSuggestion> {
 
 	renderSuggestion(suggestion: TagSuggestion, el: HTMLElement): void {
 		const container = el.createDiv();
-		container.style.display = "flex";
-		container.style.flexDirection = "column";
-		container.style.gap = "2px";
+		container.addClass("flow-suggest-container");
 
 		const tagEl = container.createSpan({ text: `#${suggestion.fullTag}` });
-		tagEl.style.fontWeight = "500";
-		tagEl.style.color = "var(--text-accent)";
+		tagEl.addClass("flow-suggest-tag");
 
 		if (suggestion.description) {
 			const descEl = container.createSpan({ text: suggestion.description });
-			descEl.style.fontSize = "0.85em";
-			descEl.style.color = "var(--text-muted)";
+			descEl.addClass("flow-suggest-desc");
 		}
 	}
 

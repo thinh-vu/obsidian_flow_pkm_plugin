@@ -65,7 +65,7 @@ export class StatisticsView {
 				popup = this.container.createDiv("flow-prop-filter-popup");
 				popup.addClass("flow-dashboard-ui-9");
 
-				popup.createEl("div", { text: isVi ? "Loại trừ thuộc tính:" : "Exclude Properties:" }).style.fontWeight = "600";
+				popup.createEl("div", { text: isVi ? "Loại trừ thuộc tính:" : "Exclude Properties:", cls: "flow-dashboard-fontweight-600" });
 
 				const allKeys = Object.keys(stats.propertiesGrouped).sort();
 				for (const key of allKeys) {
@@ -94,19 +94,22 @@ export class StatisticsView {
 				}, 0);
 			};
 
-			this.container.style.position = "relative";
+			this.container.addClass("flow-stats-container-relative");
 
-			const leftDiv = this.container.createDiv();
+			// Dedicated flex container for the two charts (separate from configBar)
+			const chartsRow = this.container.createDiv();
 			const isMobileView = window.innerWidth <= 768;
+
+			const leftDiv = chartsRow.createDiv();
 			if (isMobileView) {
-				this.container.style.flexDirection = "column";
+				chartsRow.addClass("flow-stats-charts-row-col");
 				leftDiv.addClass("flow-dashboard-ui-11");
 			} else {
-				this.container.style.flexDirection = "row";
+				chartsRow.addClass("flow-stats-charts-row");
 				leftDiv.addClass("flow-dashboard-ui-12");
 			}
 
-			const rightDiv = this.container.createDiv();
+			const rightDiv = chartsRow.createDiv();
 			if (isMobileView) rightDiv.addClass("flow-dashboard-ui-13");
 			else rightDiv.addClass("flow-dashboard-ui-14");
 
@@ -118,8 +121,8 @@ export class StatisticsView {
 			this.renderPropertiesInteractive(stats);
 
 		} else if (activeTab === "activity") {
-			this.container.style.position = "relative";
-			this.container.style.flexDirection = "column";
+			this.container.addClass("flow-stats-container-relative");
+			this.container.addClass("flow-stats-flex-col");
 
 			const topDiv = this.container.createDiv();
 			topDiv.addClass("flow-dashboard-ui-15");
@@ -151,8 +154,7 @@ export class StatisticsView {
 
 		} else {
 			const singleDiv = this.container.createDiv();
-			singleDiv.style.width = "100%";
-			singleDiv.style.height = "100%";
+			singleDiv.addClass("flow-stats-single-chart");
 
 			this.chartInstanceSingle = this.echartsModule.init(singleDiv, theme);
 			if (this.chartInstanceSingle) this.chartInstances.push(this.chartInstanceSingle);
@@ -402,7 +404,7 @@ export class StatisticsView {
 
 		if (!hasNumeric && !hasFeelings) {
 			return {
-				title: { text: isVi ? "Theo dõi tâm trạng & cảm xúc" : "Mood & Feeling Tracking", subtext: isVi ? "Không tìm thấy dữ liệu tâm trạng/cảm xúc.\nThêm 'mood: 7' (số) hoặc 'feeling: happy' vào ghi chú để bắt đầu." : "No mood/feeling data found.\nAdd 'mood: excited' or 'feeling: happy' to your notes.", left: "center", top: "center" }
+				title: { text: isVi ? "Theo dõi tâm trạng & cảm xúc" : "Mood & Feeling Tracking", subtext: isVi ? "Không tìm thấy dữ liệu tâm trạng/cảm xúc.\nThêm 'mood: excited' hoặc 'feeling: happy' vào ghi chú để bắt đầu." : "No mood/feeling data found.\nAdd 'mood: excited' or 'feeling: happy' to your notes.", left: "center", top: "center" }
 			};
 		}
 

@@ -1,6 +1,6 @@
 import { Notice } from "obsidian";
 import type FlowPlugin from "../../main";
-import { FlowRole } from "../../types";
+import { FlowRole, ReminderConfig } from "../../types";
 import { collectVaultStats } from "../dashboard/stats-collector";
 import { getSettingsLabels } from "../../i18n/settings-labels";
 import { REMINDER_MESSAGES } from "./constants";
@@ -16,18 +16,40 @@ export class NotificationWorker {
 		// Delayed first start: wait 5 minutes after loading the vault
 		const initialDelayMs = 5 * 60 * 1000;
 		setTimeout(() => {
-			this.evaluateReminders();
+			void this.evaluateReminders();
 
 			// Then schedule periodic checks
 			const intervalMs = this.plugin.settings.reminderCheckIntervalSec * 1000;
 			if (intervalMs > 0) {
 				this.plugin.registerInterval(
 					window.setInterval(() => {
-						this.evaluateReminders();
+						void this.evaluateReminders();
 					}, intervalMs)
 				);
 			}
 		}, initialDelayMs);
+	}
+
+	private isReminderActive(config: ReminderConfig, date: Date): boolean {
+		if (config.activeDays && !config.activeDays.includes(date.getDay())) {
+			return false;
+		}
+		
+		const currentMins = date.getHours() * 60 + date.getMinutes();
+		
+		if (config.activeStartTime) {
+			const [sh, sm] = config.activeStartTime.split(":").map(Number);
+			const startMins = (sh || 0) * 60 + (sm || 0);
+			if (currentMins < startMins) return false;
+		}
+		
+		if (config.activeEndTime) {
+			const [eh, em] = config.activeEndTime.split(":").map(Number);
+			const endMins = (eh || 0) * 60 + (em || 0);
+			if (currentMins > endMins) return false;
+		}
+		
+		return true;
 	}
 
 	private async evaluateReminders() {
@@ -41,9 +63,10 @@ export class NotificationWorker {
 		const now = Date.now();
 		const oneDayMs = 24 * 60 * 60 * 1000;
 		const oneWeekMs = 7 * oneDayMs;
+		const nowObj = new Date(now);
 
 		// consolidateCapture
-		if (reminders.consolidateCapture.enabled) {
+		if (reminders.consolidateCapture.enabled && this.isReminderActive(reminders.consolidateCapture, nowObj)) {
 			const captureStats = stats.roleStats[FlowRole.CAPTURE];
 			if (captureStats && captureStats.captureRawNotes > 0) {
 				const timeSinceLast = now - reminders.consolidateCapture.lastTriggered;
@@ -56,7 +79,7 @@ export class NotificationWorker {
 		}
 
 		// dailyNote
-		if (reminders.dailyNote.enabled) {
+		if (reminders.dailyNote.enabled && this.isReminderActive(reminders.dailyNote, nowObj)) {
 			const timeSinceLast = now - reminders.dailyNote.lastTriggered;
 			// 12 hours minimum between daily notes to avoid spam but catch them once a day
 			if (timeSinceLast > 12 * 60 * 60 * 1000) {
@@ -67,7 +90,7 @@ export class NotificationWorker {
 		}
 
 		// weeklyReview
-		if (reminders.weeklyReview.enabled) {
+		if (reminders.weeklyReview.enabled && this.isReminderActive(reminders.weeklyReview, nowObj)) {
 			const timeSinceLast = now - reminders.weeklyReview.lastTriggered;
 			if (timeSinceLast > oneWeekMs) {
 				this.triggerNotification(L.weeklyReview as string, REMINDER_MESSAGES.weeklyReview);
@@ -77,7 +100,7 @@ export class NotificationWorker {
 		}
 
 		// publishContent
-		if (reminders.publishContent.enabled) {
+		if (reminders.publishContent.enabled && this.isReminderActive(reminders.publishContent, nowObj)) {
 			const timeSinceLast = now - reminders.publishContent.lastTriggered;
 			if (timeSinceLast > oneWeekMs) {
 				this.triggerNotification(L.publishContent as string, REMINDER_MESSAGES.publishContent);
@@ -87,7 +110,7 @@ export class NotificationWorker {
 		}
 
 		// forgeCleanup
-		if (reminders.forgeCleanup.enabled) {
+		if (reminders.forgeCleanup.enabled && this.isReminderActive(reminders.forgeCleanup, nowObj)) {
 			const forgeStats = stats.roleStats[FlowRole.FORGE];
 			if (forgeStats && forgeStats.subfolderCount > settings.maxSubfolders) {
 				const timeSinceLast = now - reminders.forgeCleanup.lastTriggered;
@@ -105,18 +128,17 @@ export class NotificationWorker {
 	}
 
 	private triggerNotification(title: string, body: string) {
+		// Always show an internal notice to ensure it doesn't quietly fail
+		new Notice(`🔔 FLOW: ${body}`, 10000);
+
 		if ("Notification" in window && Notification.permission === "granted") {
 			new Notification(`FLOW: ${title}`, { body, icon: "🔔" });
 		} else if ("Notification" in window && Notification.permission !== "denied") {
-			Notification.requestPermission().then((perm) => {
+			void Notification.requestPermission().then((perm) => {
 				if (perm === "granted") {
 					new Notification(`FLOW: ${title}`, { body, icon: "🔔" });
-				} else {
-					new Notice(`FLOW Reminder: ${body}`, 10000);
 				}
 			});
-		} else {
-			new Notice(`FLOW Reminder: ${body}`, 10000);
 		}
 	}
 }

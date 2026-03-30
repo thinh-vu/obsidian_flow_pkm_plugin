@@ -226,7 +226,13 @@ export function collectVaultStats(
 
 	const blueprintLinks: Array<{name: string, linkCount: number}> = [];
 
+	const vaultFolder = folderMap[FlowRole.VAULT];
+	const settingsPath = vaultFolder ? `${vaultFolder}/settings/` : null;
+
 	for (const file of allFiles) {
+		// Skip files in the dynamic 'Vault/settings' folder to avoid noise in reports
+		if (settingsPath && file.path.startsWith(settingsPath)) continue;
+
 		stats.vaultTotalFiles++;
 		stats.vaultTotalSize += file.stat.size;
 

@@ -208,8 +208,8 @@ export async function syncObsidianConfigs(
 	// Collect JSON files from .obsidian/ root and recursively from .obsidian/plugins/
 	const configFiles: string[] = [];
 	try {
-		if (await adapter.exists(".obsidian")) {
-			const obsidianListed = await adapter.list(".obsidian");
+		if (await adapter.exists(vault.configDir)) {
+			const obsidianListed = await adapter.list(vault.configDir);
 			for (const file of obsidianListed.files) {
 				if (file.endsWith(".json")) {
 					configFiles.push(file);
@@ -217,10 +217,10 @@ export async function syncObsidianConfigs(
 			}
 		}
 
-		const pluginsFiles = await collectJsonFiles(".obsidian/plugins");
+		const pluginsFiles = await collectJsonFiles(`${vault.configDir}/plugins`);
 		configFiles.push(...pluginsFiles);
 	} catch (e) {
-		console.warn("[FLOW] Failed to read .obsidian directory", e);
+		console.warn("[FLOW] Failed to read config directory", e);
 	}
 
 	let updatedCount = 0;

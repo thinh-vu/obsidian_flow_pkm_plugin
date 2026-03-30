@@ -12,7 +12,7 @@ export class NavigatorView {
 	private navigatorStripedRows: boolean = false;
 	private navigatorCustomCols: string[] = [];
 	private navigatorSearchQuery: string = "";
-	private navigatorActiveFilter: { type: string; value: string } | null = null;
+	private navigatorActiveFilters: { type: string; value: string }[] = [];
 	private navigatorSelectedFiles: Set<string> = new Set();
 	private stats!: VaultStats;
 
@@ -64,15 +64,15 @@ export class NavigatorView {
 			FlowRole.BLUEPRINT, FlowRole.EXHIBIT, FlowRole.VAULT
 		];
 
-		if (this.navigatorActiveFilter) {
+		if (this.navigatorActiveFilters.length > 0) {
 			const clearBtn = filtersDiv.createEl("button");
 			clearBtn.addClass("flow-dashboard-ui-34");
 			clearBtn.style.cssText = "padding:4px 8px;display:flex;align-items:center;gap:4px;color:var(--text-error);border-color:var(--text-error);";
 			const clearIcon = clearBtn.createSpan();
 			setIcon(clearIcon, "x");
-			clearBtn.title = "Clear filter";
+			clearBtn.title = "Clear filters";
 			clearBtn.onclick = () => {
-				this.navigatorActiveFilter = null;
+				this.navigatorActiveFilters = [];
 				this.navigatorCurrentPage = 1;
 				this.render(this.stats);
 			};
@@ -85,15 +85,18 @@ export class NavigatorView {
 
 			const btn = btnWrap.createEl("button");
 			btn.addClass("flow-dashboard-ui-31");
-			const isActiveGroup = this.navigatorActiveFilter?.type === filterType;
+			const selectedItems = items.filter(i => this.navigatorActiveFilters.some(f => f.type === filterType && f.value === i.value));
+			const isActiveGroup = selectedItems.length > 0;
 			if (isActiveGroup) btn.addClass("flow-dashboard-ui-33");
 
 			const btnIcon = btn.createSpan("flow-filter-icon");
 			setIcon(btnIcon, groupIcon);
 			btnIcon.addClass("flow-dashboard-ui-32");
 
-			const activeItem = isActiveGroup ? items.find(i => i.value === this.navigatorActiveFilter!.value) : null;
-			const labelSpan = btn.createSpan({ text: activeItem ? activeItem.label : groupLabel });
+			const labelText = selectedItems.length > 0 
+				? (selectedItems.length === 1 ? selectedItems[0]!.label : `${groupLabel} (${selectedItems.length})`) 
+				: groupLabel;
+			const labelSpan = btn.createSpan({ text: labelText });
 			if (isActiveGroup) labelSpan.style.fontWeight = "bold";
 
 			const chevron = btn.createSpan();
@@ -110,28 +113,39 @@ export class NavigatorView {
 
 				for (const item of items) {
 					const row = popup.createDiv();
-					row.style.cssText = "display:flex;align-items:center;gap:8px;padding:6px 16px;cursor:pointer;font-size:0.85em;";
+					row.style.cssText = "display:flex;align-items:center;gap:8px;padding:6px 16px;cursor:pointer;font-size:0.85em;justify-content:space-between;";
 					row.onmouseenter = () => row.style.backgroundColor = "var(--background-modifier-hover)";
 					row.onmouseleave = () => row.style.backgroundColor = "transparent";
 
+					const leftSide = row.createDiv();
+					leftSide.style.cssText = "display:flex;align-items:center;gap:8px;";
+
 					if (item.icon) {
-						const iEl = row.createSpan();
+						const iEl = leftSide.createSpan();
 						setIcon(iEl, item.icon);
 						iEl.style.cssText = "display:flex;align-items:center;color:var(--text-muted);";
 						(iEl.querySelector("svg") as SVGElement)?.setAttribute("width", "14");
 						(iEl.querySelector("svg") as SVGElement)?.setAttribute("height", "14");
 					}
-					row.createSpan({ text: item.label });
+					leftSide.createSpan({ text: item.label });
 
-					const isActive = isActiveGroup && this.navigatorActiveFilter?.value === item.value;
+					const isActive = this.navigatorActiveFilters.some(f => f.type === filterType && f.value === item.value);
 					if (isActive) {
-						row.style.fontWeight = "700";
-						row.style.color = BRAND.teal;
+						leftSide.style.fontWeight = "700";
+						leftSide.style.color = "var(--interactive-accent)";
+						
+						const rightSide = row.createSpan();
+						setIcon(rightSide, "check");
+						rightSide.style.color = "var(--interactive-accent)";
+						(rightSide.querySelector("svg") as SVGElement)?.setAttribute("width", "14");
+						(rightSide.querySelector("svg") as SVGElement)?.setAttribute("height", "14");
 					}
 
 					row.onclick = () => {
-						if (isActive) this.navigatorActiveFilter = null;
-						else this.navigatorActiveFilter = { type: filterType, value: item.value };
+						const idx = this.navigatorActiveFilters.findIndex(f => f.type === filterType && f.value === item.value);
+						if (idx > -1) this.navigatorActiveFilters.splice(idx, 1);
+						else this.navigatorActiveFilters.push({ type: filterType, value: item.value });
+						
 						this.navigatorCurrentPage = 1;
 						popup.remove();
 						this.render(this.stats);
@@ -170,7 +184,16 @@ export class NavigatorView {
 
 		const channelField = this.settings.channelFieldName || "channel";
 		if (this.stats?.propertiesGrouped[channelField]) {
-			const channels = Object.keys(this.stats.propertiesGrouped[channelField]).sort();
+			const rawChannels = Object.keys(this.stats.propertiesGrouped[channelField]);
+			const normalizedChannelSet = new Set<string>();
+			for (const rc of rawChannels) {
+				const parts = rc.split(",").map(p => p.trim()).filter(p => p);
+				for (const p of parts) {
+					const normalized = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+					normalizedChannelSet.add(normalized);
+				}
+			}
+			const channels = Array.from(normalizedChannelSet).sort();
 			if (channels.length > 0) {
 				const channelItems = channels.map(ch => ({ label: ch, value: ch, icon: "radio" }));
 				createFilterGroupBtn("Channel", "radio", channelItems, "channel");
@@ -202,6 +225,17 @@ export class NavigatorView {
 		}
 
 		const isVi = this.settings.language === "vi";
+
+		createFilterGroupBtn(
+			isVi ? "Nhiệm vụ" : "Tasks",
+			"check-square",
+			[
+				{ label: isVi ? "Dở dang" : "Todo", value: "todo", icon: "square" },
+				{ label: isVi ? "Hoàn thành" : "Done", value: "done", icon: "check-square" },
+			],
+			"task"
+		);
+
 		createFilterGroupBtn(
 			isVi ? "Sức khoẻ Vault" : "Vault Health",
 			"heart-pulse",
@@ -209,6 +243,8 @@ export class NavigatorView {
 				{ label: isVi ? "Ghi chú mồ côi" : "Orphan notes", value: "orphan-notes", icon: "file-question" },
 				{ label: isVi ? "Chưa có properties" : "No properties", value: "no-properties", icon: "list" },
 				{ label: isVi ? "Chưa có tag" : "No tags", value: "no-tags", icon: "tag" },
+				{ label: isVi ? "Tag mồ côi" : "Orphan tag", value: "single-tag", icon: "alert-circle" },
+				{ label: isVi ? "Property mồ côi" : "Orphan property", value: "single-property", icon: "alert-triangle" },
 			],
 			"vault-health"
 		);
@@ -357,8 +393,9 @@ export class NavigatorView {
 
 		const createQABtn = (label: string, icon: string, color?: string) => {
 			const btn = quickActionBar.createEl("button");
-			btn.style.cssText = `display:flex;align-items:center;gap:5px;padding:5px 10px;font-size:0.82em;border-radius:6px;cursor:pointer;${color ? `color:${color};border-color:${color};` : ""}`;
+			btn.style.cssText = `display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:6px 14px;font-size:0.85em;border-radius:6px;cursor:pointer;height:auto;min-height:32px;white-space:nowrap;line-height:1;width:auto;flex-wrap:nowrap;${color ? `color:${color};border-color:${color};` : ""}`;
 			const ic = btn.createSpan();
+			ic.style.cssText = "display:flex;align-items:center;justify-content:center;";
 			setIcon(ic, icon);
 			btn.createSpan({ text: label });
 			return btn;
@@ -453,15 +490,16 @@ export class NavigatorView {
 			if (selectedFiles.length === 0) return;
 
 			const popup = this.container.createDiv();
-			popup.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:var(--background-primary);border:1px solid var(--background-modifier-border);border-radius:10px;padding:20px;min-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2);`;
-			popup.createEl("h4", { text: isVi ? "Di chuyển file" : "Move Files" }).style.margin = "0 0 12px 0";
+			popup.addClass("flow-popup-csstext");
+			popup.createEl("h4", { text: isVi ? "Di chuyển file" : "Move files", cls: "flow-popup-h4" });
 
 			const allFolders: string[] = [];
-			const collectFolders = (folder: any) => {
+			interface FolderLike { children?: { path: string; children?: unknown }[] }
+			const collectFolders = (folder: FolderLike) => {
 				for (const child of folder.children || []) {
 					if (child.children !== undefined) {
 						allFolders.push(child.path);
-						collectFolders(child);
+						collectFolders(child as FolderLike);
 					}
 				}
 			};
@@ -474,16 +512,16 @@ export class NavigatorView {
 				sel.createEl("option", { text: folder === "/" ? "/ (root)" : folder, value: folder });
 			}
 
-			const rowBtns = popup.createDiv(); rowBtns.style.cssText = "display:flex;gap:8px;justify-content:flex-end;";
+			const rowBtns = popup.createDiv(); rowBtns.addClass("flow-popup-btn-row");
 			const cancelB = rowBtns.createEl("button", { text: isVi ? "Huỷ" : "Cancel" });
 			const confirmB = rowBtns.createEl("button", { text: isVi ? "Di chuyển" : "Move" });
-			confirmB.style.cssText = "background:var(--interactive-accent);color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;";
+			confirmB.addClass("flow-popup-confirm-btn");
 			cancelB.onclick = () => popup.remove();
 			confirmB.onclick = async () => {
 				const dest = sel.value;
 				for (const f of selectedFiles) {
 					const newPath = dest === "/" ? f.name : `${dest}/${f.name}`;
-					try { await this.app.fileManager.renameFile(f, newPath); } catch { }
+					try { await this.app.fileManager.renameFile(f, newPath); } catch { /* rename failed, skip */ }
 				}
 				popup.remove();
 				this.navigatorSelectedFiles.clear();
@@ -498,17 +536,17 @@ export class NavigatorView {
 			if (selectedFiles.length === 0) return;
 
 			const popup = this.container.createDiv();
-			popup.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:var(--background-primary);border:1px solid var(--background-modifier-border);border-radius:10px;padding:20px;min-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2);`;
-			popup.createEl("h4", { text: isVi ? "Xác nhận xoá" : "Confirm Delete" }).style.margin = "0 0 8px 0";
-			popup.createEl("p", { text: isVi ? `Xoá ${selectedFiles.length} file đã chọn vào thùng rác?` : `Move ${selectedFiles.length} file(s) to trash?` }).style.cssText = "margin-bottom:12px;color:var(--text-error);";
-			const rowBtns = popup.createDiv(); rowBtns.style.cssText = "display:flex;gap:8px;justify-content:flex-end;";
+			popup.addClass("flow-popup-csstext");
+			popup.createEl("h4", { text: isVi ? "Xác nhận xoá" : "Confirm delete", cls: "flow-popup-h4" });
+			popup.createEl("p", { text: isVi ? `Xoá ${selectedFiles.length} file đã chọn vào thùng rác?` : `Move ${selectedFiles.length} file(s) to trash?`, cls: "flow-popup-error-text" });
+			const rowBtns = popup.createDiv(); rowBtns.addClass("flow-popup-btn-row");
 			const cancelB = rowBtns.createEl("button", { text: isVi ? "Huỷ" : "Cancel" });
 			const confirmB = rowBtns.createEl("button", { text: isVi ? "Xoá" : "Delete" });
-			confirmB.style.cssText = "background:var(--text-error);color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;";
+			confirmB.addClass("flow-popup-delete-btn");
 			cancelB.onclick = () => popup.remove();
 			confirmB.onclick = async () => {
 				for (const f of selectedFiles) {
-					try { await this.app.vault.trash(f, true); } catch { }
+					try { await this.app.fileManager.trashFile(f); } catch { /* trash failed, skip */ }
 				}
 				popup.remove();
 				this.navigatorSelectedFiles.clear();
@@ -521,15 +559,25 @@ export class NavigatorView {
 
 		const mdFiles = this.app.vault.getMarkdownFiles();
 
+		let incomingFiles = new Map<string, import("obsidian").TFile[]>();
+
 		triggerRenderTable = () => {
 			tableArea.empty();
 
-			const af = this.navigatorActiveFilter;
-			const isAttachmentMode = af?.type === "attachment";
+			const isAttachmentMode = this.navigatorActiveFilters.some(f => f.type === "attachment");
+			const isTagHealthMode = !isAttachmentMode && this.navigatorActiveFilters.some(f => f.value === "single-tag");
+			const isPropHealthMode = !isAttachmentMode && !isTagHealthMode && this.navigatorActiveFilters.some(f => f.value === "single-property");
 
-			const activeColNames = isAttachmentMode
-				? ["☑", "#", "Name", "Folder", "Size", "Type", "Modified"]
-				: ["☑", ...allColNames];
+			let activeColNames: string[];
+			if (isAttachmentMode) {
+				activeColNames = ["☑", "#", "Name", "Folder", "Size", "Type", "Links", "Linked Files", "Modified"];
+			} else if (isTagHealthMode) {
+				activeColNames = ["☑", "#", "Tag Name", "Used in Note"];
+			} else if (isPropHealthMode) {
+				activeColNames = ["☑", "#", "Property Name", "Used in Note", "Values"];
+			} else {
+				activeColNames = ["☑", ...allColNames];
+			}
 
 			const tableContainer = tableArea.createDiv("flow-table-container");
 			tableContainer.addClass("flow-dashboard-ui-47");
@@ -542,8 +590,8 @@ export class NavigatorView {
 
 			let selectAllCb: HTMLInputElement | null = null;
 			activeColNames.forEach((h, colIdx) => {
-				if (isAttachmentMode) {
-					// show all for attachment mode
+				if (isAttachmentMode || isTagHealthMode || isPropHealthMode) {
+					// show all for attachment mode and health modes
 				} else if (colIdx > 0 && !this.navigatorVisibleCols[colIdx - 1]) return;
 
 				const th = trHead.createEl("th");
@@ -573,12 +621,21 @@ export class NavigatorView {
 			const tbody = table.createEl("tbody");
 
 			const getValString = (file: any, colIdx: number): string => {
-				const name = (allColNames[colIdx] || "").toLowerCase();
-				if (name === "#") return "";
-				if (name === "name") return file.basename.toLowerCase();
+				const name = (activeColNames[colIdx] || "").toLowerCase();
+				if (name === "#" || name === "☑") return "";
+				if (name === "tag name" || name === "property name" || name === "name") return (file.basename || "").toLowerCase();
+				if (name === "used in note") return (file.file?.basename || "").toLowerCase();
+				if (name === "values") return String(file.values || "").toLowerCase();
+				
 				if (name === "folder") return (file.parent?.path || "").toLowerCase();
-				if (name === "created") return new Date(file.stat.ctime).toISOString();
-				if (name === "modified") return new Date(file.stat.mtime).toISOString();
+				if (name === "created") return new Date(file.stat?.ctime || 0).toISOString();
+				if (name === "modified") return new Date(file.stat?.mtime || 0).toISOString();
+				if (isAttachmentMode) {
+					if (name === "size") return (file.stat.size / (1024 * 1024)).toFixed(2) + " MB";
+					if (name === "type") return file.extension.toLowerCase();
+					if (name === "links" || name === "linked files") return String(incomingFiles.get(file.path)?.length || 0);
+				}
+
 				const cache = this.app.metadataCache.getFileCache(file);
 				if (name === "tags") {
 					if (cache?.tags) return cache.tags.map((t: any) => t.tag).join(", ");
@@ -597,16 +654,79 @@ export class NavigatorView {
 
 				const lowerQuery = this.navigatorSearchQuery.toLowerCase();
 				const resolvedLinks = this.app.metadataCache.resolvedLinks;
-				const incomingCounts = new Map<string, number>();
+				incomingFiles.clear();
 				for (const src in resolvedLinks) {
 					for (const tgt in resolvedLinks[src]) {
-						incomingCounts.set(tgt, (incomingCounts.get(tgt) || 0) + 1);
+						if (!incomingFiles.has(tgt)) incomingFiles.set(tgt, []);
+						const srcFile = this.app.vault.getAbstractFileByPath(src);
+						if (srcFile && (srcFile as any).extension === "md") {
+							incomingFiles.get(tgt)!.push(srcFile as import("obsidian").TFile);
+						}
 					}
 				}
 
-				let sourceFiles: TFile[];
+				let sourceFiles: any[];
 				if (isAttachmentMode) {
 					sourceFiles = allVaultFiles;
+				} else if (isTagHealthMode || isPropHealthMode) {
+					sourceFiles = [];
+					let tagCounts: Record<string, import("obsidian").TFile[]> = {};
+					let propCounts: Record<string, { file: import("obsidian").TFile, values: any }[]> = {};
+
+					for (const f of mdFiles) {
+						const c = this.app.metadataCache.getFileCache(f);
+						if (!c) continue;
+						
+						if (isTagHealthMode) {
+							const tags = c.tags ? c.tags.map(t => t.tag.replace(/^#/, "")) : (c.frontmatter?.tags ? [c.frontmatter.tags].flat().map(t => String(t).replace(/^#/, "")) : []);
+							for (const t of tags) {
+								if (t) {
+									if (!tagCounts[t]) tagCounts[t] = [];
+									tagCounts[t].push(f);
+								}
+							}
+						}
+						
+						if (isPropHealthMode) {
+							const keys = c.frontmatter ? Object.keys(c.frontmatter).filter(k => k !== "position" && k !== "cssclasses") : [];
+							for (const k of keys) {
+								if (!propCounts[k]) propCounts[k] = [];
+								propCounts[k].push({ file: f, values: c.frontmatter![k] });
+							}
+						}
+					}
+
+					if (isTagHealthMode) {
+						for (const [tag, files] of Object.entries(tagCounts)) {
+							// Global checking: only 1 file in the whole vault
+							if (files.length === 1) {
+								sourceFiles.push({
+									isOrphanItem: true,
+									path: `tag:${tag}`,
+									basename: tag,
+									file: files[0]!,
+									stat: files[0]!.stat,
+									parent: files[0]!.parent,
+									extension: files[0]!.extension
+								});
+							}
+						}
+					} else if (isPropHealthMode) {
+						for (const [prop, files] of Object.entries(propCounts)) {
+							if (files.length === 1) {
+								sourceFiles.push({
+									isOrphanItem: true,
+									path: `prop:${prop}`,
+									basename: prop,
+									file: files[0]!.file,
+									values: files[0]!.values,
+									stat: files[0]!.file.stat,
+									parent: files[0]!.file.parent,
+									extension: files[0]!.file.extension
+								});
+							}
+						}
+					}
 				} else {
 					sourceFiles = mdFiles.slice();
 				}
@@ -617,87 +737,121 @@ export class NavigatorView {
 						if (!matchQuery) return false;
 					}
 
-					if (af) {
-						const cache = this.app.metadataCache.getFileCache(f);
+					if (this.navigatorActiveFilters.length > 0) {
+						const cache = this.app.metadataCache.getFileCache(f.isOrphanItem ? f.file : f);
 						const fm = cache?.frontmatter;
 						const now = Date.now();
+						const typedFilters: Record<string, string[]> = {};
+						
+						for (const filter of this.navigatorActiveFilters) {
+							if (!typedFilters[filter.type]) typedFilters[filter.type] = [];
+							typedFilters[filter.type]!.push(filter.value);
+						}
 
-						if (af.type === "folder") {
-							const folderName = this.settings.folderMap[af.value as FlowRole];
-							if (!folderName) return false;
-							const cleanActiveFolder = folderName.replace(/^\d+\.\s*/, "").trim().toLowerCase();
-							const cleanFolderPath = (f.parent?.path || "").replace(/^\d+\.\s*/, "").trim().toLowerCase();
-							if (!cleanFolderPath.startsWith(cleanActiveFolder)) return false;
+						for (const [fType, fValues] of Object.entries(typedFilters)) {
+							let typeMatch = false;
 
-						} else if (af.type === "eisenhower") {
-							const urgencyField = this.settings.urgencyConfig?.fieldName || "urgency";
-							const impactField = this.settings.impactConfig?.fieldName || "impact";
-							const urgencyVal = Number(fm?.[urgencyField]) || 0;
-							const impactVal = Number(fm?.[impactField]) || 0;
-							const urgencyLevels = this.settings.urgencyConfig?.levels || [];
-							const impactLevels = this.settings.impactConfig?.levels || [];
-							const urgencyHigh = urgencyLevels.length > 0 ? urgencyVal >= (urgencyLevels[Math.floor(urgencyLevels.length / 2)]?.value ?? 3) : urgencyVal >= 3;
-							const impactHigh = impactLevels.length > 0 ? impactVal >= (impactLevels[Math.floor(impactLevels.length / 2)]?.value ?? 3) : impactVal >= 3;
-							if (af.value === "p1" && !(urgencyHigh && impactHigh)) return false;
-							if (af.value === "p2" && !(impactHigh && !urgencyHigh)) return false;
-							if (af.value === "p3" && !(urgencyHigh && !impactHigh)) return false;
-							if (af.value === "p4" && !(!urgencyHigh && !impactHigh)) return false;
+							for (const val of fValues) {
+								let valMatch = false;
 
-						} else if (af.type === "temperature") {
-							const ageDays = (now - f.stat.mtime) / (24 * 60 * 60 * 1000);
-							if (af.value === "hot" && ageDays >= 3) return false;
-							if (af.value === "warm" && (ageDays < 3 || ageDays > 30)) return false;
-							if (af.value === "cold" && ageDays <= 30) return false;
+								if (fType === "folder") {
+									const folderName = this.settings.folderMap[val as FlowRole];
+									if (folderName) {
+										const cleanActiveFolder = folderName.replace(/^\d+\.\s*/, "").trim().toLowerCase();
+										const NotePath = (f.isOrphanItem ? f.file.parent?.path : f.parent?.path) || "";
+										const cleanFolderPath = NotePath.replace(/^\d+\.\s*/, "").trim().toLowerCase();
+										valMatch = cleanFolderPath.startsWith(cleanActiveFolder);
+									}
+								} else if (fType === "task") {
+									if (val === "todo") valMatch = cache?.listItems?.some((li: any) => li.task !== undefined && li.task === " ") ?? false;
+									else if (val === "done") valMatch = cache?.listItems?.some((li: any) => li.task !== undefined && li.task !== " ") ?? false;
+								} else if (fType === "eisenhower") {
+									const urgencyField = this.settings.urgencyConfig?.fieldName || "urgency";
+									const impactField = this.settings.impactConfig?.fieldName || "impact";
+									const urgencyVal = Number(fm?.[urgencyField]) || 0;
+									const impactVal = Number(fm?.[impactField]) || 0;
+									const urgencyLevels = this.settings.urgencyConfig?.levels || [];
+									const impactLevels = this.settings.impactConfig?.levels || [];
+									const urgencyHigh = urgencyLevels.length > 0 ? urgencyVal >= (urgencyLevels[Math.floor(urgencyLevels.length / 2)]?.value ?? 3) : urgencyVal >= 3;
+									const impactHigh = impactLevels.length > 0 ? impactVal >= (impactLevels[Math.floor(impactLevels.length / 2)]?.value ?? 3) : impactVal >= 3;
+									if (val === "p1") valMatch = urgencyHigh && impactHigh;
+									else if (val === "p2") valMatch = impactHigh && !urgencyHigh;
+									else if (val === "p3") valMatch = urgencyHigh && !impactHigh;
+									else if (val === "p4") valMatch = !urgencyHigh && !impactHigh;
 
-						} else if (af.type === "channel") {
-							const chField = this.settings.channelFieldName || "channel";
-							const chVal = fm?.[chField];
-							if (!chVal) return false;
-							const channels = Array.isArray(chVal) ? chVal.map(String) : [String(chVal)];
-							if (!channels.some(c => c.toLowerCase() === af.value.toLowerCase())) return false;
+								} else if (fType === "temperature") {
+									const ageDays = (now - (f.isOrphanItem ? f.file.stat.mtime : f.stat.mtime)) / (24 * 60 * 60 * 1000);
+									if (val === "hot") valMatch = ageDays < 3;
+									else if (val === "warm") valMatch = ageDays >= 3 && ageDays <= 30;
+									else if (val === "cold") valMatch = ageDays > 30;
 
-						} else if (af.type === "publish") {
-							const pubField = this.settings.publishFieldName || "publish";
-							const pubVal = fm?.[pubField];
-							if (!pubVal) return af.value === "later" ? true : false;
-							const pubDate = new Date(String(pubVal)).getTime();
-							if (isNaN(pubDate)) return false;
-							const diffDays = (pubDate - now) / (24 * 60 * 60 * 1000);
-							if (af.value === "today" && (diffDays < 0 || diffDays > 1)) return false;
-							if (af.value === "3days" && (diffDays < 0 || diffDays > 3)) return false;
-							if (af.value === "7days" && (diffDays < 0 || diffDays > 7)) return false;
-							if (af.value === "2weeks" && (diffDays < 0 || diffDays > 14)) return false;
-							if (af.value === "later" && diffDays <= 14) return false;
+								} else if (fType === "channel") {
+									const chField = this.settings.channelFieldName || "channel";
+									const chVal = fm?.[chField];
+									if (chVal) {
+										const channels = Array.isArray(chVal) ? chVal.flatMap(v => String(v).split(",").map(s => s.trim().toLowerCase())) : String(chVal).split(",").map(c => c.trim().toLowerCase());
+										valMatch = channels.includes(val.toLowerCase());
+									}
 
-						} else if (af.type === "feeling") {
-							const feelVal = fm?.feeling;
-							if (!feelVal) return false;
-							const feelings = Array.isArray(feelVal) ? feelVal.map((v: any) => String(v).toLowerCase()) : [String(feelVal).toLowerCase()];
-							if (!feelings.includes(af.value.toLowerCase())) return false;
+								} else if (fType === "publish") {
+									const pubField = this.settings.publishFieldName || "publish";
+									const pubVal = fm?.[pubField];
+									if (!pubVal && val === "later") valMatch = true;
+									else if (pubVal) {
+										const pubDate = new Date(String(pubVal)).getTime();
+										if (!isNaN(pubDate)) {
+											const diffDays = (pubDate - now) / (86400000);
+											if (val === "today") valMatch = diffDays >= 0 && diffDays <= 1;
+											else if (val === "3days") valMatch = diffDays >= 0 && diffDays <= 3;
+											else if (val === "7days") valMatch = diffDays >= 0 && diffDays <= 7;
+											else if (val === "2weeks") valMatch = diffDays >= 0 && diffDays <= 14;
+											else if (val === "later") valMatch = diffDays > 14;
+										}
+									}
 
-						} else if (af.type === "vault-health") {
-							if (af.value === "orphan-notes") {
-								if (incomingCounts.get(f.path) ?? 0 > 0) return false;
-							} else if (af.value === "no-properties") {
-								const meaningfulKeys = fm ? Object.keys(fm).filter(k => k !== "position" && k !== "cssclasses") : [];
-								if (meaningfulKeys.length > 0) return false;
-							} else if (af.value === "no-tags") {
-								const allTags = cache?.tags?.length
-									? cache.tags
-									: (fm?.tags ? [fm.tags].flat() : []);
-								if (allTags.length > 0) return false;
+								} else if (fType === "feeling") {
+									const feelVal = fm?.feeling;
+									if (feelVal) {
+										const feelings = Array.isArray(feelVal) ? feelVal.map((v: any) => String(v).toLowerCase()) : [String(feelVal).toLowerCase()];
+										valMatch = feelings.includes(val.toLowerCase());
+									}
+
+								} else if (fType === "vault-health") {
+									if (val === "orphan-notes") {
+										valMatch = (incomingFiles.get(f.path)?.length || 0) === 0;
+									} else if (val === "no-properties") {
+										const meaningfulKeys = fm ? Object.keys(fm).filter(k => k !== "position" && k !== "cssclasses") : [];
+										valMatch = meaningfulKeys.length === 0;
+									} else if (val === "no-tags") {
+										const allTags = cache?.tags?.length ? cache.tags : (fm?.tags ? [fm.tags].flat() : []);
+										valMatch = allTags.length === 0;
+									} else if (val === "single-tag") {
+										valMatch = !!f.isOrphanItem;
+									} else if (val === "single-property") {
+										valMatch = !!f.isOrphanItem;
+									}
+
+								} else if (fType === "attachment") {
+									const sizeMB = f.stat.size / (1024 * 1024);
+									if (val === "size-10mb") valMatch = sizeMB > 10;
+									else if (val === "size-5mb") valMatch = sizeMB > 5;
+									else if (val === "size-2mb") valMatch = sizeMB > 2;
+									else if (val === "size-1mb") valMatch = sizeMB > 1;
+									else if (val.startsWith("type-")) {
+										const expectedType = val.slice(5);
+										const fileType = extTypeMap[f.extension.toLowerCase()] || "other";
+										valMatch = fileType === expectedType;
+									}
+								}
+
+								if (valMatch) {
+									typeMatch = true;
+									break; // OR logic within same group
+								}
 							}
 
-						} else if (af.type === "attachment") {
-							const sizeMB = f.stat.size / (1024 * 1024);
-							if (af.value === "size-10mb" && sizeMB <= 10) return false;
-							else if (af.value === "size-5mb" && sizeMB <= 5) return false;
-							else if (af.value === "size-2mb" && sizeMB <= 2) return false;
-							else if (af.value === "size-1mb" && sizeMB <= 1) return false;
-							else if (af.value.startsWith("type-")) {
-								const expectedType = af.value.slice(5);
-								const fileType = extTypeMap[f.extension.toLowerCase()] || "other";
-								if (fileType !== expectedType) return false;
+							if (!typeMatch) {
+								return false; // AND logic between different groups
 							}
 						}
 					}
@@ -792,8 +946,61 @@ export class NavigatorView {
 						const tdType = tr.createEl("td"); tdType.style.cssText = "padding:6px 8px;font-size:0.82em;color:var(--text-accent);";
 						tdType.setText(file.extension.toLowerCase());
 
+						const incomingForFile = incomingFiles.get(file.path) || [];
+						
+						const tdLinks = tr.createEl("td"); tdLinks.style.cssText = "padding:6px 8px;font-size:0.85em;text-align:center;";
+						tdLinks.setText(String(incomingForFile.length));
+
+						const tdLinkedFiles = tr.createEl("td"); tdLinkedFiles.style.cssText = "padding:6px 8px;font-size:0.85em;";
+						if (incomingForFile.length > 0) {
+							const linkContainer = tdLinkedFiles.createDiv();
+							linkContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;";
+							incomingForFile.forEach(srcFile => {
+								const pill = linkContainer.createSpan();
+								pill.style.cssText = "padding:2px 6px;border-radius:4px;background-color:var(--background-modifier-active-hover);color:var(--text-accent);cursor:pointer;font-size:0.9em;";
+								pill.setText(srcFile.basename);
+								pill.title = srcFile.path;
+								pill.onclick = (e) => {
+									e.stopPropagation();
+									this.app.workspace.getLeaf(false).openFile(srcFile);
+								};
+							});
+						}
+
 						const tdMod = tr.createEl("td"); tdMod.style.cssText = "padding:6px 8px;color:var(--text-faint);font-size:0.85em;";
 						tdMod.setText(new Date(file.stat.mtime).toISOString().split("T")[0] || "");
+					} else if (isTagHealthMode || isPropHealthMode) {
+						const tdCb = tr.createEl("td"); tdCb.style.padding = "4px 6px";
+						const cb = tdCb.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+						cb.checked = this.navigatorSelectedFiles.has(file.path);
+						cb.onchange = () => {
+							if (cb.checked) this.navigatorSelectedFiles.add(file.path);
+							else this.navigatorSelectedFiles.delete(file.path);
+							updateQABar();
+							triggerRenderRows();
+						};
+
+						const tdIdx = tr.createEl("td"); tdIdx.style.cssText = "padding:6px 8px;color:var(--text-faint);font-size:0.85em;";
+						tdIdx.setText(String(rowIdx));
+
+						const tdName = tr.createEl("td"); tdName.style.padding = "6px 8px";
+						const pill = tdName.createSpan();
+						pill.style.cssText = "padding:2px 8px;border-radius:12px;background-color:var(--background-modifier-active-hover);color:var(--interactive-accent);font-weight:600;font-size:0.85em;";
+						pill.setText(isTagHealthMode ? `#${file.basename}` : file.basename);
+
+						const tdNote = tr.createEl("td"); tdNote.style.cssText = "padding:6px 8px;font-size:0.85em;";
+						const noteLink = tdNote.createSpan();
+						noteLink.style.cssText = "color:var(--text-accent);cursor:pointer;text-decoration:underline;";
+						noteLink.setText(file.file.basename);
+						noteLink.onclick = (e) => {
+							e.stopPropagation();
+							this.app.workspace.getLeaf(false).openFile(file.file);
+						};
+
+						if (isPropHealthMode) {
+							const tdVals = tr.createEl("td"); tdVals.style.cssText = "padding:6px 8px;font-size:0.85em;color:var(--text-muted);word-break:break-all;";
+							tdVals.setText(String(file.values || ""));
+						}
 					} else {
 						const tdCb = tr.createEl("td"); tdCb.style.padding = "4px 6px";
 						const cb = tdCb.createEl("input", { type: "checkbox" }) as HTMLInputElement;
@@ -809,26 +1016,25 @@ export class NavigatorView {
 							if (!this.navigatorVisibleCols[colIdx]) return;
 
 							const td = tr.createEl("td");
-							td.style.padding = "6px 8px";
-							td.style.color = "var(--text-normal)";
+							td.addClass("flow-nav-td");
 							const lowerCol = colName.toLowerCase();
 
 							if (lowerCol === "#") {
 								td.setText(String(rowIdx));
-								td.style.color = "var(--text-faint)";
+								td.addClass("flow-nav-td-faint");
 							} else if (lowerCol === "name") {
 								const link = td.createEl("a", { text: file.basename });
-								link.style.cursor = "pointer";
+								link.addClass("flow-nav-link-cursor");
 								link.onclick = (e) => { e.preventDefault(); this.app.workspace.getLeaf(false).openFile(file); this.closeModal(); };
 							} else if (lowerCol === "folder") {
 								td.setText(file.parent?.path || "/");
-								td.style.color = "var(--text-muted)";
+								td.addClass("flow-nav-td-muted");
 							} else if (lowerCol === "created") {
 								td.setText(new Date(file.stat.ctime).toISOString().split("T")[0] || "");
-								td.style.color = "var(--text-faint)";
+								td.addClass("flow-nav-td-faint");
 							} else if (lowerCol === "modified") {
 								td.setText(new Date(file.stat.mtime).toISOString().split("T")[0] || "");
-								td.style.color = "var(--text-faint)";
+								td.addClass("flow-nav-td-faint");
 							} else if (lowerCol === "tags") {
 								let tagsText = "";
 								if (cache?.tags) tagsText = cache.tags.map(t => t.tag).join(", ");
@@ -837,8 +1043,7 @@ export class NavigatorView {
 									tagsText = Array.isArray(fmTags) ? fmTags.join(", ") : String(fmTags);
 								}
 								td.setText(tagsText || "-");
-								td.style.fontSize = "0.85em";
-								td.style.color = "var(--text-accent)";
+								td.addClass("flow-nav-td-accent");
 							} else {
 								let valText = "-";
 								const readProp = (propValue: any) => {
@@ -850,8 +1055,7 @@ export class NavigatorView {
 									valText = readProp(cache.frontmatter[colName]);
 								}
 								td.setText(valText);
-								td.style.fontSize = "0.85em";
-								td.style.color = "var(--text-muted)";
+								td.addClass("flow-nav-td-small");
 							}
 						});
 					}

@@ -235,5 +235,53 @@ export class GeneralTab {
 						window.open("https://learn-anything.vn/download-obsidian-flow", "_blank");
 					});
 			});
+
+		// ── Credits & Support ──
+		const creditSection = containerEl.createDiv("flow-credits-section");
+
+		creditSection.createEl("h4", { text: "Credits & Support", cls: "flow-credits-title" });
+
+		// Add Logo Link
+		const logoLink = creditSection.createEl("a");
+		logoLink.href = "http://learn-anything.vn";
+		logoLink.target = "_blank";
+		logoLink.addClass("flow-credits-logo-link");
+
+		const logo = logoLink.createEl("img");
+		logo.addClass("flow-credits-logo");
+		logo.src = "https://learn-anything.vn/img/logo-learn-anything-new-rec_trans.png";
+		logo.onerror = () => {
+			try {
+				const adapter = this.plugin.app.vault.adapter as unknown as Record<string, unknown>;
+				if (typeof adapter.getResourcePath === "function") {
+					const basePath = typeof adapter.getBasePath === "function" ? (adapter.getBasePath as () => string)() : "";
+					logo.src = `app://local/${basePath}/${this.plugin.app.vault.configDir}/plugins/obsidian-flow/learn-anything-logo-rec-trans.png`;
+				}
+			} catch { /* ignore */ }
+		};
+
+		// i18n strings for credits
+		const isViCred = this.plugin.settings.language !== "en";
+		const authorPrefix = isViCred ? "Tác giả: " : "Author: ";
+		const flowLabel = isViCred ? "Phương pháp FLOW PKM" : "FLOW PKM Methodology";
+		const courseLabel = isViCred ? "Khoá học Obsidian FLOW" : "Obsidian FLOW Course";
+
+		const createCreditLink = (parent: HTMLElement, text: string, href: string) => {
+			const link = parent.createEl("a", { text, href });
+			link.target = "_blank";
+			link.addClass("flow-credits-link");
+			return link;
+		};
+
+		const authorLine = creditSection.createEl("div");
+		authorLine.addClass("flow-credits-text-line", "flow-credits-text-line-top");
+		authorLine.appendChild(document.createTextNode(`${authorPrefix}Thịnh Vũ | `));
+		createCreditLink(authorLine, "Website", "http://learn-anything.vn");
+
+		const resourcesLine = creditSection.createEl("div");
+		resourcesLine.addClass("flow-credits-text-line", "flow-credits-text-line-bottom");
+		createCreditLink(resourcesLine, flowLabel, "https://learn-anything.vn/download-obsidian-flow");
+		resourcesLine.appendChild(document.createTextNode(" | "));
+		createCreditLink(resourcesLine, courseLabel, "https://learn-anything.vn/khoa-hoc/lp-khoa-hoc-obsidian-flow");
 	}
 }

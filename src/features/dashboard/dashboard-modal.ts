@@ -73,26 +73,6 @@ export class DashboardModal extends Modal {
 		titleRow.createEl("h2", { text: "FLOW Dashboard", cls: "flow-dashboard-title" });
 		titleRow.querySelector("h2")!.style.margin = "0";
 
-		// Learn Anything watermark
-		const watermark = headerContainer.createEl("a");
-		watermark.href = "https://learn-anything.vn/download-obsidian-flow";
-		watermark.style.cssText = "position:absolute;bottom:12px;right:20px;opacity:0.35;transition:opacity 0.2s;z-index:5;";
-		watermark.onmouseenter = () => watermark.style.opacity = "0.7";
-		watermark.onmouseleave = () => watermark.style.opacity = "0.35";
-		const logo = watermark.createEl("img");
-		logo.style.cssText = "height:24px;";
-		logo.src = "https://learn-anything.vn/img/logo-learn-anything-new-rec_trans.png";
-		logo.onerror = () => {
-			try {
-				const adapter = this.app.vault.adapter as any;
-				if (adapter.getResourcePath) {
-					const basePath = adapter.getBasePath?.() || "";
-					logo.src = `app://local/${basePath}/.obsidian/plugins/obsidian-flow/learn-anything-logo-rec-trans.png`;
-				}
-			} catch { /* ignore */ }
-		};
-		logo.alt = "Learn Anything";
-		logo.title = "Download mẫu Vault FLOW từ Learn Anything";
 
 		this.overviewContainer = contentEl.createDiv("flow-overview-container");
 		this.overviewContainer.style.marginTop = "24px";

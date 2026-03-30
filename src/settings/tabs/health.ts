@@ -170,13 +170,12 @@ export class HealthTab {
 	) {
 		const setting = new Setting(container).setName(name).setDesc(desc);
 		const controlEl = setting.controlEl;
-		controlEl.style.display = "flex";
-		controlEl.style.gap = "6px";
+		controlEl.addClass("flow-health-control-flex");
 
 		for (let i = 0; i < 3; i++) {
 			const input = controlEl.createEl("input", { type: "number" });
 			input.value = String(values[i]);
-			input.style.width = "60px";
+			input.addClass("flow-health-threshold-input");
 			input.onchange = async () => {
 				const num = parseInt(input.value, 10);
 				if (!isNaN(num) && num >= 0) {
@@ -196,13 +195,12 @@ export class HealthTab {
 	) {
 		const setting = new Setting(container).setName(name).setDesc(desc);
 		const controlEl = setting.controlEl;
-		controlEl.style.display = "flex";
-		controlEl.style.gap = "6px";
+		controlEl.addClass("flow-health-control-flex");
 
 		for (let i = 0; i < 2; i++) {
 			const input = controlEl.createEl("input", { type: "number" });
 			input.value = String(values[i]);
-			input.style.width = "60px";
+			input.addClass("flow-health-threshold-input");
 			input.onchange = async () => {
 				const num = parseInt(input.value, 10);
 				if (!isNaN(num) && num >= 0) {

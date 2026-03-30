@@ -27,29 +27,15 @@ export class TaxonomyTab {
 			if (listEl) listEl.remove();
 
 			const list = lifecycleSection.createDiv("flow-lifecycle-list");
-			list.style.display = "flex";
-			list.style.flexWrap = "wrap";
-			list.style.gap = "8px";
-			list.style.marginBottom = "12px";
-			list.style.alignItems = "center";
+			list.addClass("flow-taxonomy-lifecycle-list");
 
 			stages.forEach((stage, idx) => {
 				const chip = list.createDiv();
-				chip.style.display = "flex";
-				chip.style.alignItems = "center";
-				chip.style.gap = "6px";
-				chip.style.backgroundColor = "var(--background-secondary)";
-				chip.style.border = "1px solid var(--background-modifier-border)";
-				chip.style.borderRadius = "6px";
-				chip.style.padding = "6px 12px";
+				chip.addClass("flow-taxonomy-lifecycle-chip");
 
 				const input = chip.createEl("input", { type: "text" });
 				input.value = stage;
-				input.style.width = "100px";
-				input.style.border = "none";
-				input.style.background = "transparent";
-				input.style.fontWeight = "600";
-				input.style.color = "var(--text-normal)";
+				input.addClass("flow-taxonomy-lifecycle-input");
 
 				input.onchange = async () => {
 					const oldVal = stages[idx] || "";
@@ -64,8 +50,7 @@ export class TaxonomyTab {
 
 				if (idx < stages.length - 1) {
 					const arrow = list.createSpan({ text: "→" });
-					arrow.style.color = "var(--text-muted)";
-					arrow.style.fontWeight = "bold";
+					arrow.addClass("flow-taxonomy-arrow");
 				}
 			});
 		};
@@ -154,33 +139,27 @@ export class TaxonomyTab {
 				const fullTag = parentPath ? `${parentPath}/${node.name}` : node.name;
 
 				const row = parent.createDiv();
-				row.style.display = "flex";
-				row.style.alignItems = "center";
-				row.style.gap = "8px";
-				row.style.paddingLeft = `${depth * 24}px`;
-				row.style.padding = `4px 8px 4px ${depth * 24 + 8}px`;
+				row.addClass("flow-taxonomy-tag-row");
+				row.style.paddingLeft = `${depth * 24 + 8}px`;
 				row.style.borderBottom = "1px solid var(--background-modifier-border)";
+				row.style.padding = `4px 8px 4px ${depth * 24 + 8}px`;
 
 				if (depth > 0) {
 					const indent = row.createSpan({ text: "└" });
-					indent.style.color = "var(--text-faint)";
+					indent.addClass("flow-taxonomy-tag-indent");
 				}
 
 				const tagLabel = row.createSpan({ text: `#${fullTag}` });
-				tagLabel.style.fontWeight = "500";
-				tagLabel.style.color = "var(--text-accent)";
-				tagLabel.style.flex = "1";
+				tagLabel.addClass("flow-taxonomy-tag-label");
 
 				if (node.description) {
 					const desc = row.createSpan({ text: node.description });
-					desc.style.color = "var(--text-muted)";
-					desc.style.fontSize = "0.85em";
-					desc.style.flex = "1";
+					desc.addClass("flow-taxonomy-tag-desc");
 				}
 
 				const delBtn = row.createEl("button");
 				setIcon(delBtn, "x");
-				delBtn.style.padding = "2px";
+				delBtn.addClass("flow-taxonomy-del-btn");
 				delBtn.title = "Remove tag";
 				delBtn.onclick = async () => {
 					nodes.splice(i, 1);
@@ -197,17 +176,11 @@ export class TaxonomyTab {
 		};
 
 		const tagTreeContainer = tagSection.createDiv();
-		tagTreeContainer.style.marginBottom = "12px";
-		tagTreeContainer.style.border = "1px solid var(--background-modifier-border)";
-		tagTreeContainer.style.borderRadius = "6px";
-		tagTreeContainer.style.maxHeight = "300px";
-		tagTreeContainer.style.overflowY = "auto";
+		tagTreeContainer.addClass("flow-taxonomy-tree-container");
 
 		if (taxonomy.length === 0) {
 			const empty = tagTreeContainer.createDiv();
-			empty.style.padding = "20px";
-			empty.style.textAlign = "center";
-			empty.style.color = "var(--text-faint)";
+			empty.addClass("flow-taxonomy-tree-empty");
 			empty.setText(L.noTagsRegistered);
 		} else {
 			renderTagTree(tagTreeContainer, taxonomy, 0, "");
@@ -279,7 +252,7 @@ export class TaxonomyTab {
 		
 		if (updatedMissions.length > missions.length) {
 			this.plugin.settings.vaultMissions = updatedMissions;
-			this.plugin.saveSettings();
+			void this.plugin.saveSettings().then(() => this.generateBlueprintsIndexMarkdown());
 		}
 
 		for (let mi = 0; mi < updatedMissions.length; mi++) {
@@ -300,6 +273,7 @@ export class TaxonomyTab {
 							mission.status = val as "active" | "paused" | "completed";
 							await this.plugin.saveSettings();
 							await this.syncMissionProgress(mission.name, val as "active" | "paused" | "completed");
+							await this.generateBlueprintsIndexMarkdown();
 						}
 						this.settingTab.display();
 					});
@@ -308,6 +282,7 @@ export class TaxonomyTab {
 					btn.setButtonText("✕").setTooltip("Remove mission").onClick(async () => {
 						missions.splice(mi, 1);
 						await this.plugin.saveSettings();
+						await this.generateBlueprintsIndexMarkdown();
 						this.settingTab.display();
 					});
 				});
@@ -315,10 +290,7 @@ export class TaxonomyTab {
 
 		// Add mission form
 		const addMissionDiv = missionSection.createDiv();
-		addMissionDiv.style.display = "flex";
-		addMissionDiv.style.gap = "8px";
-		addMissionDiv.style.flexWrap = "wrap";
-		addMissionDiv.style.marginTop = "8px";
+		addMissionDiv.addClass("flow-taxonomy-add-mission-form");
 
 		const mNameInput = addMissionDiv.createEl("input", { type: "text", placeholder: L.missionNamePlaceholder });
 		mNameInput.style.flex = "1";
@@ -346,6 +318,26 @@ export class TaxonomyTab {
 			});
 			this.plugin.settings.vaultMissions = [...missions];
 			await this.plugin.saveSettings();
+			await this.generateBlueprintsIndexMarkdown();
+
+			const blueprintFolderName = this.plugin.settings.folderMap[FlowRole.BLUEPRINT];
+			if (blueprintFolderName) {
+				const blueprintFolder = findExistingFlowFolder(this.plugin.app.vault, blueprintFolderName);
+				if (blueprintFolder) {
+					const filePath = `${blueprintFolder.path}/${name}.md`;
+					const existing = this.plugin.app.vault.getAbstractFileByPath(filePath);
+					if (!existing) {
+						const tagsFm = tags.length > 0 ? `\n  - ${tags.join("\n  - ")}` : "";
+						const content = `---\nprogress: medium\nsummary: "${desc.replace(/"/g, '\\"')}"\ntags: ${tagsFm}\nimpact: 5\nurgency: 1\nmin-impact: 5\ncreated-after: 2024-08-01\n---\n\n## 📝 Activity Tracking\n\n\`\`\`dataview\nTABLE impact, created\nFROM -"6. Vault"\nWHERE contains(string(join(blueprint, "  ")), this.file.name) AND number(impact) >= number(this.min-impact) AND date(created, "yyyy-MM-dd HH:mm:ss") >= date(this.created-after)\nSORT rank DESC, created DESC\n\`\`\`\n\n## 📎 Others\n\n\`\`\`dataview\nTABLE impact, created\nFROM -"6. Vault"\nWHERE contains(string(join(blueprint, "  ")), this.file.name) AND none(list(impact))\nSORT rank DESC, created DESC\n\`\`\`\n`;
+						try {
+							await this.plugin.app.vault.create(filePath, content);
+						} catch (e) {
+							console.warn("[FLOW] Failed to auto-create mission blueprint:", e);
+						}
+					}
+				}
+			}
+
 			new Notice(`FLOW: Mission "${name}" created.`);
 			this.settingTab.display();
 		};
@@ -496,46 +488,28 @@ export class TaxonomyTab {
 
 		for (const group of EMOTION_WHEEL) {
 			const groupDiv = feelingSection.createDiv();
-			groupDiv.style.marginBottom = "12px";
+			groupDiv.addClass("flow-taxonomy-group-div");
 
 			const groupHeader = groupDiv.createDiv();
-			groupHeader.style.display = "flex";
-			groupHeader.style.alignItems = "center";
-			groupHeader.style.gap = "8px";
-			groupHeader.style.marginBottom = "6px";
+			groupHeader.addClass("flow-taxonomy-group-header");
 
-			const colorDot = groupHeader.createSpan();
-			colorDot.style.width = "12px";
-			colorDot.style.height = "12px";
-			colorDot.style.borderRadius = "50%";
-			colorDot.style.backgroundColor = group.color;
-			colorDot.style.display = "inline-block";
-			colorDot.style.flexShrink = "0";
+			const dot = groupHeader.createSpan();
+			dot.addClass("flow-taxonomy-color-dot");
+			dot.style.backgroundColor = group.color;
 
 			groupHeader.createEl("strong", { text: `${group.group} — ${group.groupVi}` });
 
 			const grid = groupDiv.createDiv();
-			grid.style.display = "flex";
-			grid.style.flexWrap = "wrap";
-			grid.style.gap = "4px";
+			grid.addClass("flow-taxonomy-feeling-grid");
 
 			for (const f of group.feelings) {
 				const chip = grid.createEl("label");
-				chip.style.display = "inline-flex";
-				chip.style.alignItems = "center";
-				chip.style.gap = "4px";
-				chip.style.padding = "4px 10px";
-				chip.style.borderRadius = "16px";
-				chip.style.fontSize = "0.85em";
-				chip.style.cursor = "pointer";
-				chip.style.border = "1px solid var(--background-modifier-border)";
+				chip.addClass("flow-taxonomy-feeling-chip");
 				chip.style.backgroundColor = selected.has(f.en) ? group.color + "25" : "transparent";
-				chip.style.transition = "background-color 0.15s";
 
 				const cb = chip.createEl("input", { type: "checkbox" }) as HTMLInputElement;
 				cb.checked = selected.has(f.en);
-				cb.style.margin = "0";
-				cb.style.cursor = "pointer";
+				cb.addClass("flow-taxonomy-feeling-checkbox");
 
 				chip.createSpan({ text: `${f.en} (${f.vi})` });
 
@@ -671,6 +645,73 @@ export class TaxonomyTab {
 		}
 
 		return settingsFolder;
+	}
+
+	private async generateBlueprintsIndexMarkdown(): Promise<void> {
+		const missions = this.plugin.settings.vaultMissions || [];
+		if (missions.length === 0) return;
+
+		const settingsFolder = await this.findOrCreateSettingsFolder();
+		if (!settingsFolder) return;
+
+		const fmLines: string[] = [
+			"---",
+			"generated: true",
+			"plugin: obsidian-flow",
+			`updated: ${new Date().toISOString().split("T")[0]}`,
+			"---",
+		];
+
+		const bodyLines: string[] = [
+			"",
+			"# 🧭 Blueprints & Missions",
+			"",
+			"> This file is auto-generated by the FLOW plugin.",
+			"> It tracks all active and completed blueprints (missions) defined in your Vault.",
+			"",
+		];
+
+		const active = missions.filter(m => m.status === "active");
+		const paused = missions.filter(m => m.status === "paused");
+		const completed = missions.filter(m => m.status === "completed");
+
+		if (active.length > 0) {
+			bodyLines.push("## 🟢 Active Missions\n");
+			for (const m of active) {
+				bodyLines.push(`- [[${m.name}]]${m.description ? ` — *${m.description}*` : ""}`);
+			}
+			bodyLines.push("");
+		}
+
+		if (paused.length > 0) {
+			bodyLines.push("## 🟡 Paused Missions\n");
+			for (const m of paused) {
+				bodyLines.push(`- [[${m.name}]]${m.description ? ` — *${m.description}*` : ""}`);
+			}
+			bodyLines.push("");
+		}
+
+		if (completed.length > 0) {
+			bodyLines.push("## ✅ Completed Missions\n");
+			for (const m of completed) {
+				bodyLines.push(`- [[${m.name}]]${m.description ? ` — *${m.description}*` : ""}`);
+			}
+			bodyLines.push("");
+		}
+
+		const content = fmLines.join("\n") + "\n" + bodyLines.join("\n");
+		const filePath = `${settingsFolder.path}/blueprints-index.md`;
+
+		try {
+			const existing = this.plugin.app.vault.getAbstractFileByPath(filePath);
+			if (existing && existing instanceof TFile) {
+				await this.plugin.app.vault.modify(existing, content);
+			} else {
+				await this.plugin.app.vault.create(filePath, content);
+			}
+		} catch (e) {
+			console.warn("[FLOW] Failed to write blueprints-index.md:", e);
+		}
 	}
 
 	private async generateTagHierarchyMarkdown(): Promise<void> {
@@ -857,13 +898,9 @@ export class TaxonomyTab {
 		const title = type === "urgency" ? "Urgency" : "Impact";
 
 		const fieldSection = container.createDiv();
-		fieldSection.style.marginBottom = "16px";
-		fieldSection.style.padding = "12px";
-		fieldSection.style.background = "var(--background-secondary)";
-		fieldSection.style.borderRadius = "8px";
-		fieldSection.style.border = "1px solid var(--background-modifier-border)";
+		fieldSection.addClass("flow-taxonomy-field-section");
 
-		fieldSection.createEl("h4", { text: `${icon} ${title}` }).style.margin = "0 0 8px 0";
+		fieldSection.createEl("h4", { text: `${icon} ${title}`, cls: "flow-taxonomy-field-title" });
 
 		// Field name
 		new Setting(fieldSection)
@@ -886,36 +923,21 @@ export class TaxonomyTab {
 
 		// Levels list
 		const levelsContainer = fieldSection.createDiv();
-		levelsContainer.style.display = "flex";
-		levelsContainer.style.flexWrap = "wrap";
-		levelsContainer.style.gap = "6px";
-		levelsContainer.style.marginBottom = "8px";
+		levelsContainer.addClass("flow-taxonomy-levels-container");
 
 		const renderLevels = () => {
 			levelsContainer.empty();
 			for (let i = 0; i < config.levels.length; i++) {
 				const level = config.levels[i]!;
 				const chip = levelsContainer.createDiv();
-				chip.style.display = "flex";
-				chip.style.alignItems = "center";
-				chip.style.gap = "4px";
-				chip.style.background = "var(--background-primary)";
-				chip.style.border = "1px solid var(--background-modifier-border)";
-				chip.style.borderRadius = "6px";
-				chip.style.padding = "4px 8px";
+				chip.addClass("flow-taxonomy-level-chip");
 
 				const valSpan = chip.createEl("strong", { text: String(level.value) });
-				valSpan.style.color = "var(--text-accent)";
-				valSpan.style.minWidth = "16px";
-				valSpan.style.textAlign = "center";
+				valSpan.addClass("flow-taxonomy-level-value");
 
 				const labelInput = chip.createEl("input", { type: "text" });
 				labelInput.value = level.label;
-				labelInput.style.width = "100px";
-				labelInput.style.border = "none";
-				labelInput.style.background = "transparent";
-				labelInput.style.fontSize = "0.85em";
-				labelInput.style.color = "var(--text-normal)";
+				labelInput.addClass("flow-taxonomy-level-input");
 				labelInput.onchange = async () => {
 					level.label = labelInput.value.trim();
 					await this.plugin.saveSettings();
@@ -923,8 +945,7 @@ export class TaxonomyTab {
 
 				const delBtn = chip.createEl("button");
 				setIcon(delBtn, "x");
-				delBtn.style.padding = "0 2px";
-				delBtn.style.cursor = "pointer";
+				delBtn.addClass("flow-taxonomy-level-del");
 				delBtn.onclick = async () => {
 					config.levels.splice(i, 1);
 					await this.plugin.saveSettings();
@@ -937,9 +958,7 @@ export class TaxonomyTab {
 
 		// Add level button
 		const addRow = fieldSection.createDiv();
-		addRow.style.display = "flex";
-		addRow.style.gap = "6px";
-		addRow.style.alignItems = "center";
+		addRow.addClass("flow-taxonomy-add-level-row");
 
 		const valInput = addRow.createEl("input", { type: "number", placeholder: L.valuePlaceholder });
 		valInput.style.width = "60px";

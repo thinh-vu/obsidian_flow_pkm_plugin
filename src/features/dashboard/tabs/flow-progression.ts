@@ -46,7 +46,7 @@ const LABELS = {
 };
 
 function getLabels(settings: FlowPluginSettings) {
-	return LABELS[(settings as any).language === "en" ? "en" : "vi"];
+	return LABELS[settings.language === "en" ? "en" : "vi"];
 }
 
 /**
@@ -68,7 +68,7 @@ export function renderFlowProgressionTab(
 	container.addClass("flow-progression-tab");
 	container.style.flexDirection = "column"; // Fix: force horizontal row for summary vs grid
 	container.style.overflowY = "auto";
-	injectCSS();
+	// CSS is now in styles.css (fp-* classes)
 	const L = getLabels(settings);
 
 	// Compute health scores
@@ -263,7 +263,7 @@ export function renderFlowProgressionTab(
 			}
 		});
 
-	grid.createDiv("fp-col-arrow").innerHTML = arrowSplitH();
+	setArrowSvg(grid.createDiv("fp-col-arrow"), arrowSplitH());
 
 	// ── Col 2: Capture + Track ──────────────────────────────────────
 	const col2 = grid.createDiv("fp-col fp-col-pair");
@@ -294,7 +294,7 @@ export function renderFlowProgressionTab(
 			}
 		});
 
-	grid.createDiv("fp-col-arrow").innerHTML = arrowMergeH();
+	setArrowSvg(grid.createDiv("fp-col-arrow"), arrowMergeH());
 
 	// ── Col 3: Forge ────────────────────────────────────────────────
 	const col3 = grid.createDiv("fp-col fp-col-single");
@@ -324,7 +324,7 @@ export function renderFlowProgressionTab(
 			}
 		});
 
-	grid.createDiv("fp-col-arrow").innerHTML = arrowSplitH(true);
+	setArrowSvg(grid.createDiv("fp-col-arrow"), arrowSplitH(true));
 
 	// ── Col 4: Exhibit + Vault ──────────────────────────────────────
 	const col4 = grid.createDiv("fp-col fp-col-pair");
@@ -451,234 +451,15 @@ function arrowMergeH() {
 	</svg>`;
 }
 
-// ── CSS ─────────────────────────────────────────────────────────────────
-
-function injectCSS() {
-	if (document.getElementById("fp-css-v7")) return;
-	const s = document.createElement("style");
-	s.id = "fp-css-v7";
-	s.textContent = `
-		/* ═══════ SUMMARY ZONE ═══════ */
-		.fp-summary-zone {
-			margin: 0 8px 12px;
-			border-radius: 12px;
-			border: 1px solid var(--background-modifier-border);
-			background: var(--background-secondary);
-			overflow: hidden;
-			flex-shrink: 0;
+/** Safely set SVG content by parsing and appending DOM nodes */
+function setArrowSvg(container: HTMLElement, svgMarkup: string) {
+	const parser = new DOMParser();
+	const wrapper = `<div xmlns="http://www.w3.org/1999/xhtml">${svgMarkup}</div>`;
+	const doc = parser.parseFromString(wrapper, "text/html");
+	const nodes = doc.body.firstElementChild?.childNodes;
+	if (nodes) {
+		for (const node of Array.from(nodes)) {
+			container.appendChild(document.importNode(node, true));
 		}
-		.fp-summary-header {
-			display: flex; align-items: center; gap: 14px;
-			padding: 12px 18px; flex-wrap: wrap;
-		}
-		.fp-overall-ring {
-			width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
-			display: flex; align-items: center; justify-content: center;
-			background: conic-gradient(
-				var(--ring-color) calc(var(--ring-pct) * 3.6deg),
-				var(--background-modifier-border) calc(var(--ring-pct) * 3.6deg)
-			);
-			position: relative;
-		}
-		.fp-overall-ring::after {
-			content:''; position:absolute; inset:4px; border-radius:50%;
-			background: var(--background-secondary);
-		}
-		.fp-overall-ring .fp-ring-value {
-			position: relative; z-index: 1;
-			font-size: 0.85em; font-weight: 800;
-		}
-		.fp-overall-info { display: flex; flex-direction: column; gap: 2px; }
-		.fp-overall-title { font-weight: 700; font-size: 0.92em; }
-		.fp-overall-badge {
-			font-size: 0.72em; padding: 2px 8px; border-radius: 8px;
-			font-weight: 600; width: fit-content;
-		}
-		.fp-stage-bars {
-			display: flex; gap: 3px; flex: 1; min-width: 100px; align-items: center;
-		}
-		.fp-stage-minibar {
-			flex: 1; height: 6px; border-radius: 3px;
-			background: var(--background-modifier-border); overflow: hidden;
-		}
-		.fp-stage-minibar-fill {
-			height: 100%; border-radius: 3px; transition: width 0.4s;
-		}
-		.fp-summary-hint {
-			font-size: 0.72em; color: var(--text-faint); white-space: nowrap;
-		}
-
-		/* ═══════ DETAIL PANEL ═══════ */
-		.fp-detail-panel {
-			border-top: 1px solid var(--background-modifier-border);
-			padding: 12px 18px;
-		}
-		.fp-dp-header {
-			display: flex; align-items: center; justify-content: space-between;
-			padding: 0 0 8px 10px; margin-bottom: 8px;
-			border-bottom: 1px solid var(--background-modifier-border);
-		}
-		.fp-dp-title { font-weight: 700; font-size: 0.92em; }
-		.fp-dp-close {
-			cursor: pointer; padding: 2px 8px; border-radius: 4px;
-			font-size: 0.85em; color: var(--text-muted);
-		}
-		.fp-dp-close:hover { background: var(--background-modifier-hover); }
-		.fp-dp-criteria { display: flex; flex-wrap: wrap; gap: 10px; }
-		.fp-dp-row {
-			display: flex; align-items: center; gap: 8px; justify-content: space-between;
-			padding: 6px 12px; border-radius: 8px; flex: 1 1 auto; min-width: 260px; max-width: 350px;
-			background: var(--background-primary); font-size: 0.82em;
-		}
-		.fp-dp-label { flex: 1; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-		.fp-dp-bar-wrap {
-			width: 60px; height: 5px; border-radius: 3px;
-			background: var(--background-modifier-border); overflow: hidden; flex-shrink: 0;
-		}
-		.fp-dp-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
-		.fp-dp-score { font-weight: 700; min-width: 32px; text-align: right; }
-		.fp-dp-badge {
-			font-size: 0.72em; padding: 1px 6px; border-radius: 6px;
-			font-weight: 600; min-width: 45px; text-align: center;
-		}
-
-		/* ═══════ GRID ═══════ */
-		.fp-grid {
-			display: flex; flex-direction: row;
-			align-items: stretch;
-			overflow-x: auto; -webkit-overflow-scrolling: touch;
-			padding: 0 8px 24px; gap: 0;
-			flex-shrink: 0;
-		}
-		.fp-col { display: flex; flex-direction: column; justify-content: center; flex: 1 1 0; min-width: 0; box-sizing: border-box; }
-		.fp-col-single { flex: 1 1 0; }
-		.fp-col-pair { flex: 1 1 0; gap: 10px; }
-		.fp-col-arrow {
-			display: flex; align-items: center; justify-content: center;
-			flex: 0 0 40px; color: var(--text-muted); padding: 0;
-		}
-		.fp-svg-h { width: 36px; height: 80px; display: block; }
-		.fp-svg-v { display: none; }
-
-		/* ═══════ CARD ═══════ */
-		.fp-card {
-			border-radius: 14px; padding: 18px 20px; position: relative; overflow: visible;
-			transition: transform 0.2s, box-shadow 0.2s;
-			border: 1px solid var(--background-modifier-border);
-			background: var(--background-primary);
-			flex: 1; box-sizing: border-box;
-		}
-		.fp-card::before {
-			content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
-			border-radius: 14px 14px 0 0;
-			background: var(--card-accent, ${BRAND.gray});
-		}
-		.fp-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.10); }
-		.fp-card-icon { color: var(--card-accent); display: flex; align-items: center; flex-shrink: 0; }
-		.fp-card-icon svg { width: 18px; height: 18px; }
-
-		/* Blueprint special */
-		.fp-blueprint {
-			background: linear-gradient(135deg, var(--background-primary), var(--background-secondary));
-			border: 2px solid ${BRAND.teal};
-		}
-		.fp-blueprint .fp-card-header { justify-content: center; }
-		.fp-blueprint .fp-card-title { flex: 0 1 auto; }
-		.fp-blueprint .fp-card-desc { text-align: center; }
-		.fp-vault { border-style: dashed; }
-
-		/* Header */
-		.fp-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: nowrap; }
-		.fp-card-title { margin: 0; font-size: 0.95em; font-weight: 700; flex: 1; }
-		.fp-card-badge {
-			font-size: 0.7em; padding: 2px 8px; border-radius: 10px;
-			background: ${BRAND.teal}; color: #fff; font-weight: 600;
-			white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;
-		}
-		.fp-badge-icon { display: flex; align-items: center; }
-		.fp-badge-icon svg { width: 12px; height: 12px; }
-
-		/* Health Ring */
-		.fp-health-ring {
-			width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-			display: flex; align-items: center; justify-content: center;
-			background: conic-gradient(
-				var(--ring-color) calc(var(--ring-pct) * 3.6deg),
-				var(--background-modifier-border) calc(var(--ring-pct) * 3.6deg)
-			);
-			cursor: pointer; position: relative; transition: transform 0.15s;
-		}
-		.fp-health-ring:hover { transform: scale(1.1); }
-		.fp-health-ring::after {
-			content:''; position:absolute; inset:3px; border-radius:50%;
-			background: var(--background-primary);
-		}
-		.fp-ring-value {
-			position: relative; z-index: 1;
-			font-size: 0.68em; font-weight: 700; color: var(--text-normal); line-height: 1;
-		}
-
-		/* Content */
-		.fp-card-desc { font-size: 0.76em; color: var(--text-muted); margin: 0 0 10px; line-height: 1.35; }
-		.fp-metric-hero { display: flex; flex-direction: column; align-items: center; margin: 6px 0; }
-		.fp-hero-number { font-size: 2.2em; font-weight: 800; color: ${BRAND.teal}; line-height: 1; }
-		.fp-hero-label { font-size: 0.82em; color: var(--text-muted); margin-top: 3px; }
-		.fp-metric-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 0.85em; gap: 8px; }
-		.fp-metric-label { color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
-		.fp-metric-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
-		.fp-metric-icon svg { width: 14px; height: 14px; }
-		.fp-metric-value { font-weight: 700; white-space: nowrap; }
-		.fp-progress-bar { width: 100%; height: 5px; background: var(--background-modifier-border); border-radius: 5px; margin: 6px 0 2px; overflow: hidden; }
-		.fp-progress-fill { height: 100%; border-radius: 5px; transition: width 0.4s; }
-		.fp-progress-label { font-size: 0.72em; color: var(--text-muted); display: block; text-align: right; }
-
-		/* Heatmap */
-		.fp-heatmap { margin-top: 8px; }
-		.fp-heat-label { font-size: 0.76em; color: var(--text-muted); display: block; margin-bottom: 3px; }
-		.fp-heat-chips { display: flex; flex-wrap: wrap; gap: 3px; }
-		.fp-chip { font-size: 0.7em; padding: 2px 7px; border-radius: 8px; border: 1px solid var(--background-modifier-border); background: var(--background-secondary); white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
-		.fp-chip-icon { display: inline-flex; align-items: center; }
-		.fp-chip-icon svg { width: 12px; height: 12px; }
-		.fp-chip-hot  { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
-		.fp-chip-warm { background: #fffbeb; color: #d97706; border-color: #fde68a; }
-		.fp-chip-cold { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
-		.theme-dark .fp-chip-hot  { background: #451a1a; color: #fca5a5; border-color: #7f1d1d; }
-		.theme-dark .fp-chip-warm { background: #451a00; color: #fcd34d; border-color: #78350f; }
-		.theme-dark .fp-chip-cold { background: #1e2a4a; color: #93c5fd; border-color: #1e3a5f; }
-
-		/* Tags */
-		.fp-tags-row { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 8px; align-items: center; }
-		.fp-tag-icon { display: inline-flex; align-items: center; }
-		.fp-tag-icon svg { width: 14px; height: 14px; }
-		.fp-tag-label { font-size: 0.76em; color: var(--text-muted); }
-		.fp-tag-pill { font-size: 0.68em; padding: 2px 7px; border-radius: 8px; background: ${BRAND.deepBlue}; color: #fff; font-weight: 600; white-space: nowrap; }
-
-		/* ═══════ LARGE DESKTOP ═══════ */
-		@media (min-width: 1200px) {
-			.fp-card { padding: 22px 26px; }
-			.fp-metric-row { font-size: 0.9em; padding: 5px 0; }
-			.fp-card-desc { font-size: 0.82em; }
-			.fp-hero-number { font-size: 2.6em; }
-			.fp-health-ring { width: 42px; height: 42px; }
-			.fp-ring-value { font-size: 0.75em; }
-		}
-
-		/* ═══════ MOBILE ═══════ */
-		@media (max-width: 700px) {
-			.fp-grid { flex-direction: column; overflow-x: hidden; padding: 0 0 16px; gap: 0; }
-			.fp-col-pair { gap: 8px; }
-			.fp-card { min-width: unset; max-width: 100%; width: 100%; padding: 16px 14px; }
-			.fp-col-arrow { padding: 6px 0; flex: 0 0 auto; }
-			.fp-svg-h { display: none; }
-			.fp-svg-v { display: block; width: 24px; height: 32px; }
-			.fp-summary-header { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
-			.fp-stage-bars { min-width: 80px; }
-		}
-	`;
-	document.head.appendChild(s);
-	// Remove old CSS versions
-	for (const id of ["flow-progression-css", "flow-progression-css-v2", "fp-css-v3", "fp-css-v4", "fp-css-v5", "fp-css-v6"]) {
-		const el = document.getElementById(id);
-		if (el) el.remove();
 	}
 }

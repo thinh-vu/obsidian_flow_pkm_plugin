@@ -9,6 +9,7 @@
  */
 
 import { Notice, Plugin, TFolder } from "obsidian";
+import type { EventRef } from "obsidian";
 import { FlowPluginSettings } from "./types";
 import { DEFAULT_SETTINGS, detectCurrentPreset } from "./constants";
 import { FlowSettingTab } from "./settings";
@@ -21,8 +22,7 @@ export default class FlowPlugin extends Plugin {
 
 	private sortUninstall: (() => void) | undefined;
 	private ribbonIconEl: HTMLElement | undefined;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	private tocEventRefs: any[] = [];
+	private tocEventRefs: EventRef[] = [];
 
 	async onload() {
 		await this.loadSettings();
@@ -119,7 +119,7 @@ export default class FlowPlugin extends Plugin {
 			}
 
 			// Invalidate stats cache on vault changes
-			import("./features/dashboard/stats-collector").then(({ invalidateStatsCache }) => {
+			void import("./features/dashboard/stats-collector").then(({ invalidateStatsCache }) => {
 				this.registerEvent(this.app.vault.on("create", invalidateStatsCache));
 				this.registerEvent(this.app.vault.on("delete", invalidateStatsCache));
 				this.registerEvent(this.app.vault.on("rename", invalidateStatsCache));
@@ -175,10 +175,9 @@ export default class FlowPlugin extends Plugin {
 			// Request default sort to clean up
 			const leaf =
 				this.app.workspace.getLeavesOfType("file-explorer")?.[0];
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const view = leaf?.view as any;
-			if (view?.requestSort) {
-				view.requestSort();
+			const view = leaf?.view as Record<string, unknown> | undefined;
+			if (view && typeof view.requestSort === "function") {
+				(view.requestSort as () => void)();
 			}
 		}
 	}

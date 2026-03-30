@@ -35,7 +35,7 @@ export class TaxonomyView {
 		
 		const isVi = this.settings.language === "vi";
 
-		this.container.style.display = "flex";
+		this.container.addClass("flow-taxonomy-display-flex");
 		this.container.addClass("flow-dashboard-ui-17");
 
 		const taxonomy = this.settings.tagTaxonomy || [];
@@ -126,7 +126,7 @@ export class TaxonomyView {
 		if (dimensions.length > 0 && stats) {
 			const dimChartDiv = this.container.createDiv();
 			dimChartDiv.addClass("flow-dashboard-ui-20");
-			dimChartDiv.style.marginTop = "150px";
+			dimChartDiv.addClass("flow-taxonomy-dim-chart");
 
 			const dimChart = this.echartsModule.init(dimChartDiv, "light");
 			this.chartInstances.push(dimChart);
@@ -218,11 +218,10 @@ export class TaxonomyView {
 
 		// ── Bottom: Mission Board ──
 		const missionBoard = this.container.createDiv();
-		missionBoard.style.padding = "16px";
+		missionBoard.addClass("flow-taxonomy-mission-padding");
 
 		const mTitle = missionBoard.createEl("h4", { text: "🎯 Blueprints" });
-		mTitle.style.marginBottom = "12px";
-		mTitle.style.color = "var(--text-normal)";
+		mTitle.addClass("flow-taxonomy-mission-title");
 
 		if (missions.length === 0) {
 			const emptyM = missionBoard.createDiv();
@@ -245,15 +244,13 @@ export class TaxonomyView {
 
 				header.createSpan({ text: statusIcon });
 				const nameEl = header.createSpan({ text: m.name });
-				nameEl.style.fontWeight = "600";
-				nameEl.style.fontSize = "1.05em";
+				nameEl.addClass("flow-taxonomy-status-name");
 
 				const displayStatus = isVi ? (m.status === "active" ? "HOẠT ĐỘNG" : m.status === "paused" ? "TẠM DỪNG" : "HOÀN THÀNH") : m.status.toUpperCase();
 				const statusBadge = header.createSpan({ text: displayStatus });
 				statusBadge.addClass("flow-dashboard-ui-25");
+				statusBadge.addClass("flow-taxonomy-status-badge");
 				statusBadge.style.backgroundColor = statusColor;
-				statusBadge.style.color = "#fff";
-				statusBadge.style.fontWeight = "600";
 
 				if (m.description) {
 					const desc = card.createDiv({ text: m.description });

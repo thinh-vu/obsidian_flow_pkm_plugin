@@ -46,7 +46,10 @@ export interface FlowPreset {
 export interface ReminderConfig {
 	enabled: boolean;
 	frequency: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
-	dayOfWeek?: number; // 0=Sun, 1=Mon, ...
+	dayOfWeek?: number; // 0=Sun, 1=Mon, ... (Legacy)
+	activeDays?: number[]; // [0, 1, 2, 3, 4, 5, 6]
+	activeStartTime?: string; // "08:00"
+	activeEndTime?: string; // "22:00"
 	lastTriggered: number; // timestamp
 }
 
@@ -151,7 +154,7 @@ export interface FlowPluginSettings {
 	/** Selected feelings from the emotion wheel for property suggestions */
 	selectedFeelings: string[];
 	/** Cached dashboard statistics for zero-latency loading */
-	lastCachedStats: Record<string, any> | null;
+	lastCachedStats: Record<string, unknown> | null;
 	/** Dashboard stats auto-refresh interval in minutes (0 = disabled) */
 	dashboardRefreshIntervalMin: number;
 	/** Plugin language */

@@ -11,16 +11,16 @@ import { getFlowSortIndex } from "./flow-resolver";
 // We inline a minimal implementation to avoid the external dependency
 type UninstallFn = () => void;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Minimal monkey-patching utility (replaces monkey-around dependency)
 function around(
-	obj: Record<string, any>,
-	factories: Record<string, (original: (...args: any[]) => any) => (...args: any[]) => any>
+	obj: Record<string, unknown>,
+	factories: Record<string, (original: (...args: unknown[]) => unknown) => (...args: unknown[]) => unknown>
 ): UninstallFn {
-	const originals: Record<string, any> = {};
+	const originals: Record<string, unknown> = {};
 	for (const key of Object.keys(factories)) {
 		originals[key] = obj[key];
 		const factory = factories[key]!;
-		const original = obj[key];
+		const original = obj[key] as (...args: unknown[]) => unknown;
 		obj[key] = factory(original);
 	}
 	return () => {
@@ -31,9 +31,8 @@ function around(
 }
 
 // Obsidian internal types for File Explorer (not in public API)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface FileExplorerLeaf {
-	view: any;
+	view: Record<string, unknown> & { getSortedFolderItems?: (...args: unknown[]) => unknown[]; requestSort?: () => void; containerEl?: HTMLElement };
 	isDeferred?: boolean;
 }
 
@@ -57,7 +56,7 @@ export function installFlowSort(
 	}
 
 	if (fileExplorerLeaf.isDeferred) {
-		console.info("[FLOW] File Explorer is deferred, setting up watcher.");
+		console.debug("[FLOW] File Explorer is deferred, setting up watcher.");
 		return setupDeferredWatcher(plugin, fileExplorerLeaf, folderMap);
 	}
 
@@ -83,11 +82,11 @@ function patchFileExplorer(
 		return undefined;
 	}
 
-	const proto = Object.getPrototypeOf(leaf.view) as Record<string, any>;
+	const proto = Object.getPrototypeOf(leaf.view) as Record<string, unknown>;
 
 	const uninstall = around(proto, {
-		getSortedFolderItems(old: (...args: any[]) => any[]) {
-			return function (this: any, ...args: any[]): any[] {
+		getSortedFolderItems(old: (...args: unknown[]) => unknown[]) {
+			return function (this: unknown, ...args: unknown[]): unknown[] {
 				const folder = args[0] as { path: string; children: unknown[] } | undefined;
 				const result = old.call(this, ...args);
 
