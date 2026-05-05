@@ -40,6 +40,7 @@ export interface FlowPreset {
 	id: string;
 	label: string;
 	folders: FlowFolderMap;
+	descriptions: Record<FlowRole, string>;
 }
 
 /** Configuration for a single reminder type */
@@ -119,6 +120,8 @@ export interface FlowPluginSettings {
 	presetId: string;
 	/** The actual folder name mapping (editable when presetId is "custom") */
 	folderMap: FlowFolderMap;
+	/** Custom descriptions for each role (editable when presetId is "custom") */
+	roleDescriptions: Record<FlowRole, string>;
 	/** Whether to use numerical prefixes (e.g., "1. Capture" vs "Capture") */
 	useNumberPrefix: boolean;
 	/** Whether to enable custom sort for FLOW folders in File Explorer */
@@ -167,5 +170,17 @@ export interface FlowPluginSettings {
 	publishFieldName: string;
 	/** Channel property name (for filtering by channel) */
 	channelFieldName: string;
+	/** Task filter persistence state */
+	taskFilters?: {
+		status: string | string[];
+		priority: string | string[];
+	};
+	/** Startup action (Welcome Screen) */
+	startupAction: "none" | "file" | "graph" | "dashboard" | "dashboard-navigator" | "dashboard-tasks" | "dashboard-statistics";
+	/** Path to the markdown file to open on startup (if startupAction is "file") */
+	startupFilePath: string;
+	
+	// ZEN MODE
+	zenModeLevel: 0 | 1 | 2;
 }
 

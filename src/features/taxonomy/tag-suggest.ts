@@ -65,12 +65,11 @@ export class TagTaxonomySuggest extends EditorSuggest<TagSuggestion> {
 		const container = el.createDiv();
 		container.addClass("flow-suggest-container");
 
-		const tagEl = container.createSpan({ text: `#${suggestion.fullTag}` });
-		tagEl.addClass("flow-suggest-tag");
-
 		if (suggestion.description) {
-			const descEl = container.createSpan({ text: suggestion.description });
-			descEl.addClass("flow-suggest-desc");
+			container.createSpan({ text: suggestion.description, cls: "flow-suggest-main" });
+			container.createSpan({ text: `#${suggestion.fullTag}`, cls: "flow-suggest-secondary" });
+		} else {
+			container.createSpan({ text: `#${suggestion.fullTag}`, cls: "flow-suggest-main" });
 		}
 	}
 

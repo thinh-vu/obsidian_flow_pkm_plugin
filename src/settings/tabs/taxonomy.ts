@@ -1,4 +1,4 @@
-import { App, Setting, Notice, setIcon, TFile, TFolder } from "obsidian";
+import { Setting, Notice, setIcon, TFile, TFolder } from "obsidian";
 import type FlowPlugin from "../../main";
 import { FlowRole, TagNode } from "../../types";
 import { findExistingFlowFolder, findFlowFolderByRole } from "../../core/folder-manager";
@@ -62,9 +62,9 @@ export class TaxonomyTab {
 			.setDesc(L.addStageDesc)
 			.addText((text) => {
 				text.setPlaceholder(L.newStageName);
-				text.inputEl.style.minWidth = "120px";
-				text.inputEl.style.flex = "1";
-				(text.inputEl as any).__flowRef = text;
+				text.inputEl.setCssProps({ "min-width": "120px" })
+				text.inputEl.setCssProps({ "flex": "1" });
+				(text.inputEl as HTMLElement & { __flowRef?: unknown }).__flowRef = text;
 			})
 			.addButton((btn) => {
 				btn.setButtonText(L.addBtn).onClick(async () => {
@@ -98,7 +98,7 @@ export class TaxonomyTab {
 			.setDesc(L.publishFieldDesc)
 			.addText((text) => {
 				text
-					.setPlaceholder("publish")
+					.setPlaceholder("Publish")
 					.setValue(this.plugin.settings.publishFieldName || "publish")
 					.onChange(async (value) => {
 						if (value.trim()) {
@@ -113,7 +113,7 @@ export class TaxonomyTab {
 			.setDesc(L.channelFieldDesc)
 			.addText((text) => {
 				text
-					.setPlaceholder("channel")
+					.setPlaceholder("Channel")
 					.setValue(this.plugin.settings.channelFieldName || "channel")
 					.onChange(async (value) => {
 						if (value.trim()) {
@@ -140,9 +140,9 @@ export class TaxonomyTab {
 
 				const row = parent.createDiv();
 				row.addClass("flow-taxonomy-tag-row");
-				row.style.paddingLeft = `${depth * 24 + 8}px`;
-				row.style.borderBottom = "1px solid var(--background-modifier-border)";
-				row.style.padding = `4px 8px 4px ${depth * 24 + 8}px`;
+				row.setCssProps({ "padding-left": `${depth * 24 + 8}px` })
+				row.setCssProps({ "border-bottom": "1px solid var(--background-modifier-border)" })
+				row.setCssProps({ "padding": `4px 8px 4px ${depth * 24 + 8}px` })
 
 				if (depth > 0) {
 					const indent = row.createSpan({ text: "└" });
@@ -191,17 +191,17 @@ export class TaxonomyTab {
 			.setDesc(L.addTagDesc)
 			.addText((text) => {
 				text.setPlaceholder("e.g. project/python");
-				text.inputEl.style.minWidth = "120px";
-				text.inputEl.style.flex = "1";
+				text.inputEl.setCssProps({ "min-width": "120px" })
+				text.inputEl.setCssProps({ "flex": "1" })
 			})
 			.addText((text) => {
 				text.setPlaceholder("Description (optional)");
-				text.inputEl.style.minWidth = "120px";
-				text.inputEl.style.flex = "1";
+				text.inputEl.setCssProps({ "min-width": "120px" })
+				text.inputEl.setCssProps({ "flex": "1" })
 				text.inputEl.addClass("flow-tag-desc-input");
 			})
 			.addButton((btn) => {
-				btn.setButtonText("+ Add").onClick(async () => {
+				btn.setButtonText("+ add").onClick(async () => {
 					const inputs = tagSection.querySelectorAll(".setting-item:last-child input[type=text]");
 					const nameInput = inputs[0] as HTMLInputElement;
 					const descInput = inputs[1] as HTMLInputElement;
@@ -263,9 +263,9 @@ export class TaxonomyTab {
 				.setName(`${statusIcon} ${m.name}`)
 				.setDesc(`${m.description} | Tags: ${m.relatedTags.map((t) => "#" + t).join(", ") || "none"}`)
 				.addDropdown((dd) => {
-					dd.addOption("active", "🟢 Active");
-					dd.addOption("paused", "🟡 Paused");
-					dd.addOption("completed", "✅ Completed");
+					dd.addOption("active", "🟢 active");
+					dd.addOption("paused", "🟡 paused");
+					dd.addOption("completed", "✅ completed");
 					dd.setValue(m.status);
 					dd.onChange(async (val) => {
 						const mission = missions[mi];
@@ -293,14 +293,14 @@ export class TaxonomyTab {
 		addMissionDiv.addClass("flow-taxonomy-add-mission-form");
 
 		const mNameInput = addMissionDiv.createEl("input", { type: "text", placeholder: L.missionNamePlaceholder });
-		mNameInput.style.flex = "1";
-		mNameInput.style.minWidth = "120px";
+		mNameInput.setCssProps({ "flex": "1" })
+		mNameInput.setCssProps({ "min-width": "120px" })
 		const mDescInput = addMissionDiv.createEl("input", { type: "text", placeholder: L.descriptionPlaceholder });
-		mDescInput.style.flex = "2";
-		mDescInput.style.minWidth = "150px";
+		mDescInput.setCssProps({ "flex": "2" })
+		mDescInput.setCssProps({ "min-width": "150px" })
 		const mTagsInput = addMissionDiv.createEl("input", { type: "text", placeholder: L.tagsPlaceholder });
-		mTagsInput.style.flex = "1";
-		mTagsInput.style.minWidth = "120px";
+		mTagsInput.setCssProps({ "flex": "1" })
+		mTagsInput.setCssProps({ "min-width": "120px" })
 
 		const mAddBtn = addMissionDiv.createEl("button", { text: L.addMission });
 		mAddBtn.onclick = async () => {
@@ -328,7 +328,7 @@ export class TaxonomyTab {
 					const existing = this.plugin.app.vault.getAbstractFileByPath(filePath);
 					if (!existing) {
 						const tagsFm = tags.length > 0 ? `\n  - ${tags.join("\n  - ")}` : "";
-						const content = `---\nprogress: medium\nsummary: "${desc.replace(/"/g, '\\"')}"\ntags: ${tagsFm}\nimpact: 5\nurgency: 1\nmin-impact: 5\ncreated-after: 2024-08-01\n---\n\n## 📝 Activity Tracking\n\n\`\`\`dataview\nTABLE impact, created\nFROM -"6. Vault"\nWHERE contains(string(join(blueprint, "  ")), this.file.name) AND number(impact) >= number(this.min-impact) AND date(created, "yyyy-MM-dd HH:mm:ss") >= date(this.created-after)\nSORT rank DESC, created DESC\n\`\`\`\n\n## 📎 Others\n\n\`\`\`dataview\nTABLE impact, created\nFROM -"6. Vault"\nWHERE contains(string(join(blueprint, "  ")), this.file.name) AND none(list(impact))\nSORT rank DESC, created DESC\n\`\`\`\n`;
+						const content = `---\nprogress: medium\nsummary: "${desc.replace(/"/g, '"')}"\ntags: ${tagsFm}\nimpact: 5\nurgency: 1\nmin-impact: 5\ncreated-after: 2024-08-01\n---\n\n## 📝 Activity Tracking\n\n\`\`\`dataview\nTABLE impact, created\nFROM -"6. Vault"\nWHERE contains(string(join(blueprint, "  ")), this.file.name) AND number(impact) >= number(this.min-impact) AND date(created, "yyyy-MM-dd HH:mm:ss") >= date(this.created-after)\nSORT rank DESC, created DESC\n\`\`\`\n\n## 📎 Others\n\n\`\`\`dataview\nTABLE impact, created\nFROM -"6. Vault"\nWHERE contains(string(join(blueprint, "  ")), this.file.name) AND none(list(impact))\nSORT rank DESC, created DESC\n\`\`\`\n`;
 						try {
 							await this.plugin.app.vault.create(filePath, content);
 						} catch (e) {
@@ -359,7 +359,7 @@ export class TaxonomyTab {
 				.setDesc(`Values: ${dim.values.join(", ") || "(empty)"}`)
 				.addText((text) => {
 					text.setPlaceholder(L.addValuePlaceholder);
-					text.inputEl.style.width = "120px";
+					text.inputEl.setCssProps({ "width": "120px" })
 					text.inputEl.onkeydown = async (e) => {
 						if (e.key === "Enter") {
 							const val = text.getValue().trim();
@@ -389,8 +389,8 @@ export class TaxonomyTab {
 			.setName(L.addDimension)
 			.addText((text) => {
 				text.setPlaceholder(L.dimensionLabel);
-				text.inputEl.style.minWidth = "120px";
-				text.inputEl.style.flex = "1";
+				text.inputEl.setCssProps({ "min-width": "120px" })
+				text.inputEl.setCssProps({ "flex": "1" })
 			})
 			.addButton((btn) => {
 				btn.setButtonText(L.addBtn).onClick(async () => {
@@ -495,7 +495,7 @@ export class TaxonomyTab {
 
 			const dot = groupHeader.createSpan();
 			dot.addClass("flow-taxonomy-color-dot");
-			dot.style.backgroundColor = group.color;
+			dot.setCssProps({ "background-color": group.color })
 
 			groupHeader.createEl("strong", { text: `${group.group} — ${group.groupVi}` });
 
@@ -505,9 +505,9 @@ export class TaxonomyTab {
 			for (const f of group.feelings) {
 				const chip = grid.createEl("label");
 				chip.addClass("flow-taxonomy-feeling-chip");
-				chip.style.backgroundColor = selected.has(f.en) ? group.color + "25" : "transparent";
+				chip.setCssProps({ "background-color": selected.has(f.en) ? group.color + "25" : "transparent" })
 
-				const cb = chip.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+				const cb = chip.createEl("input", { type: "checkbox" });
 				cb.checked = selected.has(f.en);
 				cb.addClass("flow-taxonomy-feeling-checkbox");
 
@@ -519,7 +519,7 @@ export class TaxonomyTab {
 					} else {
 						selected.delete(f.en);
 					}
-					chip.style.backgroundColor = cb.checked ? group.color + "25" : "transparent";
+					chip.setCssProps({ "background-color": cb.checked ? group.color + "25" : "transparent" })
 					this.plugin.settings.selectedFeelings = Array.from(selected);
 					await this.plugin.saveSettings();
 					await this.generateFeelingsSpectrumMarkdown(EMOTION_WHEEL);
@@ -909,7 +909,7 @@ export class TaxonomyTab {
 			.addText((text) => {
 				text.setValue(config.fieldName);
 				text.setPlaceholder(type);
-				text.inputEl.style.width = "140px";
+				text.inputEl.setCssProps({ "width": "140px" })
 				text.inputEl.onchange = async () => {
 					const newName = text.getValue().trim().toLowerCase();
 					if (newName && newName !== config.fieldName) {
@@ -961,10 +961,10 @@ export class TaxonomyTab {
 		addRow.addClass("flow-taxonomy-add-level-row");
 
 		const valInput = addRow.createEl("input", { type: "number", placeholder: L.valuePlaceholder });
-		valInput.style.width = "60px";
+		valInput.setCssProps({ "width": "60px" })
 		const lblInput = addRow.createEl("input", { type: "text", placeholder: L.labelPlaceholder });
-		lblInput.style.width = "120px";
-		lblInput.style.flex = "1";
+		lblInput.setCssProps({ "width": "120px" })
+		lblInput.setCssProps({ "flex": "1" })
 
 		const addBtn = addRow.createEl("button", { text: L.addBtn });
 		addBtn.onclick = async () => {
@@ -977,7 +977,7 @@ export class TaxonomyTab {
 				valInput.value = "";
 				lblInput.value = "";
 				renderLevels();
-				new Notice(`FLOW: Level ${v} \"${l}\" added to ${title}.`);
+				new Notice(`FLOW: Level ${v} "${l}" added to ${title}.`);
 			}
 		};
 	}
@@ -1009,9 +1009,9 @@ export class TaxonomyTab {
 		}
 
 		if (count > 0) {
-			new Notice(`FLOW: Renamed field \"${oldKey}\" \u2192 \"${newKey}\" in ${count} note(s).`);
+			new Notice(`FLOW: Renamed field "${oldKey}" \u2192 "${newKey}" in ${count} note(s).`);
 		} else {
-			new Notice(`FLOW: No notes found with field \"${oldKey}\".`);
+			new Notice(`FLOW: No notes found with field "${oldKey}".`);
 		}
 	}
 }

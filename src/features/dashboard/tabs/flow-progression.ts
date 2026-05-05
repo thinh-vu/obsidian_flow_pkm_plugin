@@ -66,8 +66,8 @@ export function renderFlowProgressionTab(
 ) {
 	container.empty();
 	container.addClass("flow-progression-tab");
-	container.style.flexDirection = "column"; // Fix: force horizontal row for summary vs grid
-	container.style.overflowY = "auto";
+	container.setCssProps({ "flex-direction": "column" }) // Fix: force horizontal row for summary vs grid
+	container.setCssProps({ "overflow-y": "auto" })
 	// CSS is now in styles.css (fp-* classes)
 	const L = getLabels(settings);
 
@@ -83,10 +83,19 @@ export function renderFlowProgressionTab(
 	const overallColor = HEALTH_COLORS[overallLevel];
 
 	const stageOrder = [FlowRole.BLUEPRINT, FlowRole.CAPTURE, FlowRole.TRACK, FlowRole.FORGE, FlowRole.EXHIBIT, FlowRole.VAULT];
+	// Extract clean names from folderMap by stripping leading numbers and dots (e.g. "1. Capture" -> "Capture")
+	const cleanName = (role: FlowRole) => {
+		const raw = settings.folderMap[role] || role;
+		return raw.replace(/^\d+\.\s*/, "").trim();
+	};
+
 	const stageNames: Record<string, string> = {
-		[FlowRole.BLUEPRINT]: L.blueprint, [FlowRole.CAPTURE]: L.capture,
-		[FlowRole.TRACK]: L.track, [FlowRole.FORGE]: L.forge,
-		[FlowRole.EXHIBIT]: L.exhibit, [FlowRole.VAULT]: L.vault,
+		[FlowRole.BLUEPRINT]: cleanName(FlowRole.BLUEPRINT),
+		[FlowRole.CAPTURE]: cleanName(FlowRole.CAPTURE),
+		[FlowRole.TRACK]: cleanName(FlowRole.TRACK),
+		[FlowRole.FORGE]: cleanName(FlowRole.FORGE),
+		[FlowRole.EXHIBIT]: cleanName(FlowRole.EXHIBIT),
+		[FlowRole.VAULT]: cleanName(FlowRole.VAULT),
 	};
 
 	const naming = stats.namingConventions;
@@ -117,7 +126,7 @@ export function renderFlowProgressionTab(
 
 	const overallHealthRes: StageHealthResult = {
 		totalScore: overallScore,
-		level: overallLevel as "basic" | "good" | "advanced",
+		level: overallLevel,
 		evaluationText: evaluationText,
 		criteria: stageOrder.map(role => {
 			const hs = healthScores[role];
@@ -147,27 +156,27 @@ export function renderFlowProgressionTab(
 
 	// Remove old mini stage bars, insert textual evaluation directly here.
 	const evalTextWrap = summaryHeader.createDiv("fp-summary-eval");
-	evalTextWrap.style.cssText = "flex: 1; min-width: 250px; font-size: 0.85em; color: var(--text-normal); line-height: 1.4;";
+	evalTextWrap.setCssProps({ "flex": "1", "min-width": "250px", "font-size": "0.85em", "color": "var(--text-normal)", "line-height": "1.4" })
 	const evalP = evalTextWrap.createEl("p", { text: overallHealthRes.evaluationText });
-	evalP.style.margin = "0";
+	evalP.setCssProps({ "margin": "0" })
 
 	// Detail panel (populated with Vault Health by default, later overridden on card ring click)
 	const detailPanel = summaryZone.createDiv("fp-detail-panel");
-	detailPanel.style.display = "block";
+	detailPanel.setCssProps({ "display": "block" })
 
 	// ── Card Grid ───────────────────────────────────────────────────
 	const grid = container.createDiv("fp-grid");
 
 	const showDetail = (role: string | null, health: StageHealthResult) => {
 		detailPanel.empty();
-		detailPanel.style.display = "flex";
-		detailPanel.style.flexDirection = "column";
-		detailPanel.style.gap = "8px";
+		detailPanel.setCssProps({ "display": "flex" })
+		detailPanel.setCssProps({ "flex-direction": "column" })
+		detailPanel.setCssProps({ "gap": "8px" })
 
 		if (role) {
-			evalTextWrap.style.display = "none";
+			evalTextWrap.setCssProps({ "display": "none" })
 		} else {
-			evalTextWrap.style.display = "block";
+			evalTextWrap.setCssProps({ "display": "block" })
 		}
 
 		const isVi = L.healthScore === "Sức khoẻ";
@@ -180,7 +189,7 @@ export function renderFlowProgressionTab(
 				text: `${stageName} — ${health.totalScore}/100`,
 				cls: "fp-dp-title"
 			});
-			header.style.borderLeft = `4px solid ${stageColor}`;
+			header.setCssProps({ "border-left": `4px solid ${stageColor}` })
 
 			const closeBtn = header.createEl("span", { text: "✕", cls: "fp-dp-close" });
 			closeBtn.onclick = () => { showDetail(null, overallHealthRes); };
@@ -189,16 +198,16 @@ export function renderFlowProgressionTab(
 		if (health.evaluationText && role !== null) {
 			const evalEl = detailPanel.createDiv("fp-dp-evaluation");
 			const p = evalEl.createEl("p", { text: health.evaluationText });
-			p.style.margin = "0";
+			p.setCssProps({ "margin": "0" })
 			if (!role) {
-				evalEl.style.fontSize = "0.95em";
-				evalEl.style.color = "var(--text-normal)";
-				evalEl.style.lineHeight = "1.5";
-				evalEl.style.paddingBottom = "8px";
+				evalEl.setCssProps({ "font-size": "0.95em" })
+				evalEl.setCssProps({ "color": "var(--text-normal)" })
+				evalEl.setCssProps({ "line-height": "1.5" })
+				evalEl.setCssProps({ "padding-bottom": "8px" })
 			} else {
-				evalEl.style.fontSize = "0.85em";
-				evalEl.style.color = "var(--text-muted)";
-				evalEl.style.paddingBottom = "4px";
+				evalEl.setCssProps({ "font-size": "0.85em" })
+				evalEl.setCssProps({ "color": "var(--text-muted)" })
+				evalEl.setCssProps({ "padding-bottom": "4px" })
 			}
 		}
 
@@ -214,18 +223,18 @@ export function renderFlowProgressionTab(
 			// Progress bar
 			const barWrap = row.createDiv("fp-dp-bar-wrap");
 			const barFill = barWrap.createDiv("fp-dp-bar-fill");
-			barFill.style.width = `${(c.score / c.maxScore) * 100}%`;
-			barFill.style.backgroundColor = lvlColor;
+			barFill.setCssProps({ "width": `${(c.score / c.maxScore) * 100}%` })
+			barFill.setCssProps({ "background-color": lvlColor })
 			row.createSpan({ text: `${c.score}/${c.maxScore}`, cls: "fp-dp-score" });
 			const lvlBadge = row.createSpan({ text: lvlLabel, cls: "fp-dp-badge" });
-			lvlBadge.style.backgroundColor = lvlColor + "20";
-			lvlBadge.style.color = lvlColor;
+			lvlBadge.setCssProps({ "background-color": lvlColor + "20" })
+			lvlBadge.setCssProps({ "color": lvlColor })
 		}
 	};
 
 	// ── Col 1: Blueprint ────────────────────────────────────────────
 	const col1 = grid.createDiv("fp-col fp-col-single");
-	renderCard(col1, "fp-blueprint", "compass", L.blueprint, null, L.blueprintDesc,
+	renderCard(col1, "fp-blueprint", "compass", stageNames[FlowRole.BLUEPRINT] || L.blueprint, null, settings.roleDescriptions[FlowRole.BLUEPRINT] || L.blueprintDesc,
 		healthScores[FlowRole.BLUEPRINT], FlowRole.BLUEPRINT, L, showDetail, (body) => {
 			const rs = stats.roleStats[FlowRole.BLUEPRINT];
 			const hero = body.createDiv("fp-metric-hero");
@@ -235,12 +244,12 @@ export function renderFlowProgressionTab(
 			const top5 = rs?.topLinkedFiles || [];
 			if (top5.length > 0) {
 				const list = body.createDiv();
-				list.style.marginTop = "12px";
+				list.setCssProps({ "margin-top": "12px" })
 				const header = list.createDiv();
-				header.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 0.72em; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--background-modifier-border);";
+				header.setCssProps({ "display": "flex", "align-items": "center", "justify-content": "space-between", "gap": "4px", "font-size": "0.72em", "color": "var(--text-faint)", "text-transform": "uppercase", "letter-spacing": "0.05em", "margin-bottom": "6px", "padding-bottom": "4px", "border-bottom": "1px dashed var(--background-modifier-border)" })
 
 				const leftH = header.createSpan();
-				leftH.style.cssText = "display: flex; align-items: center; gap: 4px;";
+				leftH.setCssProps({ "display": "flex", "align-items": "center", "gap": "4px" })
 				const hIcon = leftH.createSpan();
 				setIcon(hIcon, "link");
 				(hIcon.querySelector("svg") as SVGElement)?.setAttribute("width", "12");
@@ -248,17 +257,17 @@ export function renderFlowProgressionTab(
 				leftH.createSpan({ text: L.healthScore === "Sức khoẻ" ? "Sứ Mệnh Nổi Bật" : "Top Missions" });
 
 				const rightH = header.createSpan({ text: "Links" });
-				rightH.style.cssText = "flex-shrink: 0; text-align: right;";
+				rightH.setCssProps({ "flex-shrink": "0", "text-align": "right" })
 
 				for (const file of top5) {
 					const row = list.createDiv();
-					row.style.cssText = "display:flex; justify-content:space-between; align-items:center; font-size: 0.82em; padding: 3px 0; gap: 8px; width: 100%;";
+					row.setCssProps({ "display": "flex", "justify-content": "space-between", "align-items": "center", "font-size": "0.82em", "padding": "3px 0", "gap": "8px", "width": "100%" })
 
 					const nameEl = row.createSpan({ text: file.name.replace(/\.md$/i, "") });
-					nameEl.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-muted); flex: 1; min-width: 0;";
+					nameEl.setCssProps({ "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis", "color": "var(--text-muted)", "flex": "1", "min-width": "0" })
 
 					const badge = row.createSpan({ text: String(file.linkCount) });
-					badge.style.cssText = "font-weight: bold; color: var(--text-normal); font-size: 0.9em; flex-shrink: 0; min-width: 24px; text-align: right;";
+					badge.setCssProps({ "font-weight": "bold", "color": "var(--text-normal)", "font-size": "0.9em", "flex-shrink": "0", "min-width": "24px", "text-align": "right" })
 				}
 			}
 		});
@@ -267,7 +276,7 @@ export function renderFlowProgressionTab(
 
 	// ── Col 2: Capture + Track ──────────────────────────────────────
 	const col2 = grid.createDiv("fp-col fp-col-pair");
-	renderCard(col2, "fp-capture", "inbox", L.capture, null, L.captureDesc,
+	renderCard(col2, "fp-capture", "inbox", stageNames[FlowRole.CAPTURE] || L.capture, null, settings.roleDescriptions[FlowRole.CAPTURE] || L.captureDesc,
 		healthScores[FlowRole.CAPTURE], FlowRole.CAPTURE, L, showDetail, (body) => {
 			const rs = stats.roleStats[FlowRole.CAPTURE];
 			const total = rs?.noteCount || 0;
@@ -278,7 +287,7 @@ export function renderFlowProgressionTab(
 			addProgressBar(body, pct, STAGE_COLORS.capture || BRAND.orange);
 			addMetric(body, "file", L.rawNotes, rs?.captureRawNotes || 0);
 		});
-	renderCard(col2, "fp-track", "calendar", L.track, null, L.trackDesc,
+	renderCard(col2, "fp-track", "calendar", stageNames[FlowRole.TRACK] || L.track, null, settings.roleDescriptions[FlowRole.TRACK] || L.trackDesc,
 		healthScores[FlowRole.TRACK], FlowRole.TRACK, L, showDetail, (body) => {
 			const rs = stats.roleStats[FlowRole.TRACK];
 			const done = rs?.trackTasksCompleted || 0;
@@ -298,7 +307,7 @@ export function renderFlowProgressionTab(
 
 	// ── Col 3: Forge ────────────────────────────────────────────────
 	const col3 = grid.createDiv("fp-col fp-col-single");
-	renderCard(col3, "fp-forge", "hammer", L.forge, null, L.forgeDesc,
+	renderCard(col3, "fp-forge", "hammer", stageNames[FlowRole.FORGE] || L.forge, null, settings.roleDescriptions[FlowRole.FORGE] || L.forgeDesc,
 		healthScores[FlowRole.FORGE], FlowRole.FORGE, L, showDetail, (body) => {
 			const rs = stats.roleStats[FlowRole.FORGE];
 			addMetric(body, "layers", L.totalDrafts, rs?.noteCount || 0);
@@ -328,7 +337,7 @@ export function renderFlowProgressionTab(
 
 	// ── Col 4: Exhibit + Vault ──────────────────────────────────────
 	const col4 = grid.createDiv("fp-col fp-col-pair");
-	renderCard(col4, "fp-exhibit", "library", L.exhibit, null, L.exhibitDesc,
+	renderCard(col4, "fp-exhibit", "library", stageNames[FlowRole.EXHIBIT] || L.exhibit, null, settings.roleDescriptions[FlowRole.EXHIBIT] || L.exhibitDesc,
 		healthScores[FlowRole.EXHIBIT], FlowRole.EXHIBIT, L, showDetail, (body) => {
 			const rs = stats.roleStats[FlowRole.EXHIBIT];
 			addMetric(body, "archive", L.totalContent, rs?.noteCount || 0);
@@ -343,7 +352,7 @@ export function renderFlowProgressionTab(
 				}
 			}
 		});
-	renderCard(col4, "fp-vault", "hard-drive", L.vault, null, L.vaultDesc,
+	renderCard(col4, "fp-vault", "hard-drive", stageNames[FlowRole.VAULT] || L.vault, null, settings.roleDescriptions[FlowRole.VAULT] || L.vaultDesc,
 		healthScores[FlowRole.VAULT], FlowRole.VAULT, L, showDetail, (body) => {
 			const sizeMB = (stats.vaultTotalSize / (1024 * 1024)).toFixed(1);
 			const orphanMB = (stats.orphanedAttachmentsSize / (1024 * 1024)).toFixed(1);
@@ -420,8 +429,8 @@ function addMetric(p: HTMLElement, iconName: string, label: string, value: strin
 function addProgressBar(p: HTMLElement, pct: number, color: string) {
 	const bar = p.createDiv("fp-progress-bar");
 	const fill = bar.createDiv("fp-progress-fill");
-	fill.style.width = `${Math.min(pct, 100)}%`;
-	fill.style.background = color;
+	fill.setCssProps({ "width": `${Math.min(pct, 100)}%` })
+	fill.setCssProps({ "background": color })
 }
 
 function arrowSplitH(dashedBottom = false) {

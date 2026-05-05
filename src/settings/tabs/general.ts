@@ -1,9 +1,41 @@
-import { Setting, Notice } from "obsidian";
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable obsidianmd/ui/sentence-case */
+import { Setting, Notice, AbstractInputSuggest, App, TFile } from "obsidian";
 import type FlowPlugin from "../../main";
-import { FLOW_ROLE_ORDER, FlowRole, FLOW_ROLE_DESCRIPTIONS } from "../../types";
+import { FLOW_ROLE_ORDER, FLOW_ROLE_DESCRIPTIONS, FlowPluginSettings } from "../../types";
 import { generateTOCFiles, getExistingFlowRoles } from "../../features/toc/toc-generator";
 import type { FlowSettingTab } from "../../settings";
 import { getSettingsLabels } from "../../i18n/settings-labels";
+
+class FileSuggest extends AbstractInputSuggest<TFile> {
+	textInputEl: HTMLInputElement;
+
+	constructor(app: App, textInputEl: HTMLInputElement) {
+		super(app, textInputEl);
+		this.textInputEl = textInputEl;
+	}
+
+	getSuggestions(inputStr: string): TFile[] {
+		const files = this.app.vault.getMarkdownFiles();
+		if (inputStr === "") {
+			return files.slice(0, 10);
+		}
+		const lowerCaseInputStr = inputStr.toLowerCase();
+		return files
+			.filter((file) => file.path.toLowerCase().includes(lowerCaseInputStr))
+			.slice(0, 10);
+	}
+
+	renderSuggestion(file: TFile, el: HTMLElement): void {
+		el.setText(file.path);
+	}
+
+	selectSuggestion(file: TFile): void {
+		this.textInputEl.value = file.path;
+		this.textInputEl.trigger("input");
+		this.close();
+	}
+}
 
 export class GeneralTab {
 	constructor(private plugin: FlowPlugin, private settingTab: FlowSettingTab) {}
@@ -48,7 +80,7 @@ export class GeneralTab {
 			.setName(L.pluginLanguage)
 			.setDesc(L.pluginLanguageDesc)
 			.addDropdown((dropdown) => {
-				dropdown.addOption("vi", "🇻🇳 Tiếng Việt");
+				dropdown.addOption("vi", "🇻🇳 Tiếng việt");
 				dropdown.addOption("en", "🇺🇸 English");
 				dropdown.setValue(this.plugin.settings.language || "vi");
 				dropdown.onChange(async (value) => {
@@ -57,7 +89,69 @@ export class GeneralTab {
 					new Notice(`FLOW: Language → ${value === "vi" ? "Tiếng Việt" : "English"}.`);
 					// Re-render settings to apply language change immediately
 					this.settingTab.display();
+					
+					// Trigger sidebar view refresh
+					const { workspace } = this.plugin.app;
+					const leaves = workspace.getLeavesOfType("flow-task-sidebar-view");
+					leaves.forEach(leaf => {
+						if (leaf.view && typeof (leaf.view as { refresh?: () => void }).refresh === "function") {
+							(leaf.view as { refresh?: () => void }).refresh?.();
+						}
+					});
 				});
+			});
+
+		const isVi = this.plugin.settings.language === "vi";
+
+		new Setting(section)
+			.setName(isVi ? "Màn hình chào mừng (startup)" : "Welcome screen (startup)")
+			.setDesc(isVi ? "Hành động được kích hoạt tự động khi bạn mở ứng dụng." : "Action to perform automatically when opening the app.")
+			.addDropdown((dropdown) => {
+				dropdown.addOption("none", isVi ? "Không làm gì" : "None");
+				dropdown.addOption("dashboard", isVi ? "Dashboard: tổng quan" : "Dashboard: overview");
+				dropdown.addOption("dashboard-navigator", isVi ? "Dashboard: bảng nội dung" : "Dashboard: navigator");
+				dropdown.addOption("dashboard-tasks", isVi ? "Dashboard: nhiệm vụ" : "Dashboard: tasks");
+				dropdown.addOption("dashboard-statistics", isVi ? "Dashboard: thống kê" : "Dashboard: statistics");
+				dropdown.addOption("graph", isVi ? "Mở graph view" : "Open graph view");
+				dropdown.addOption("file", isVi ? "Mở 1 file cố định" : "Open specific file");
+				dropdown.setValue(this.plugin.settings.startupAction || "none");
+				dropdown.onChange(async (value) => {
+					this.plugin.settings.startupAction = value as any;
+					await this.plugin.saveSettings();
+					this.settingTab.display();
+				});
+			});
+
+		if (this.plugin.settings.startupAction === "file") {
+			new Setting(section)
+				.setName(isVi ? "Đường dẫn file cố định" : "Specific file path")
+				.setDesc(isVi ? "Đường dẫn tới file (ví dụ: 1. Capture/Inbox.md). Gõ để tìm kiếm file." : "Path to the markdown file (e.g. 1. Capture/Inbox.md). Type to search.")
+				.addText((text) => {
+					text.setPlaceholder("Folder/File.md");
+					text.setValue(this.plugin.settings.startupFilePath || "");
+					new FileSuggest(this.plugin.app, text.inputEl);
+					text.onChange(async (value) => {
+						this.plugin.settings.startupFilePath = value;
+						await this.plugin.saveSettings();
+					});
+				});
+		}
+
+		new Setting(section)
+			.setName("Cấp độ zen mode (mặc định)")
+			.setDesc("0: Tắt. 1: Ẩn Ribbon, Title bar, Tabs, Vault profile. 2: Ẩn thêm cả hai Sidebars.")
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption("0", "Tắt (off)")
+					.addOption("1", "Level 1 (focus)")
+					.addOption("2", "Level 2 (clean)")
+					.setValue(this.plugin.settings.zenModeLevel.toString())
+					.onChange(async (value) => {
+						this.plugin.settings.zenModeLevel = parseInt(value) as 0 | 1 | 2;
+						await this.plugin.saveSettings();
+						// always re-apply to trigger cleanup or setup
+						this.plugin.applyUiState();
+					});
 			});
 
 		// TOC section
@@ -114,7 +208,7 @@ export class GeneralTab {
 
 				new Setting(checkboxSection)
 					.setName(`${folderName}`)
-					.setDesc(exists ? FLOW_ROLE_DESCRIPTIONS[role] : "⚠ Folder does not exist")
+					.setDesc(exists ? (this.plugin.settings.roleDescriptions[role] || FLOW_ROLE_DESCRIPTIONS[role]) : "⚠ Folder does not exist")
 					.addToggle((toggle) => {
 						toggle.setValue(this.settingTab.tocSelectedRoles.has(role) && exists);
 						toggle.setDisabled(!exists);
@@ -161,16 +255,15 @@ export class GeneralTab {
 		}
 
 		// ── Settings Data Management ──────────
-		const isVi = this.plugin.settings.language === "vi";
 		const dataSection = containerEl.createDiv("flow-section");
-		dataSection.createEl("h3", { text: isVi ? "Quản lý Dữ liệu" : "Data Management" });
+		dataSection.createEl("h3", { text: isVi ? "Quản lý dữ liệu" : "Data management" });
 		dataSection.createEl("p", {
 			text: isVi ? "Nhập hoặc xuất cấu hình FLOW của bạn thành file JSON." : "Import or export your FLOW settings as a JSON file.",
 			cls: "setting-item-description",
 		});
 
 		new Setting(dataSection)
-			.setName(isVi ? "Xuất cấu hình" : "Export Settings")
+			.setName(isVi ? "Xuất cấu hình" : "Export settings")
 			.setDesc(isVi ? "Lưu cấu hình hiện tại thành file JSON để sao lưu." : "Save your current configuration to a file.")
 			.addButton((button) => {
 				button.setButtonText(isVi ? "Xuất" : "Export").onClick(() => {
@@ -187,7 +280,7 @@ export class GeneralTab {
 			});
 
 		new Setting(dataSection)
-			.setName(isVi ? "Nhập cấu hình" : "Import Settings")
+			.setName(isVi ? "Nhập cấu hình" : "Import settings")
 			.setDesc(isVi ? "Tải cấu hình từ file JSON (chú ý: ghi đè cấu hình hiện tại)." : "Load your configuration from a JSON file (overwrites current settings).")
 			.addButton((button) => {
 				button.setButtonText(isVi ? "Nhập" : "Import").onClick(() => {
@@ -200,12 +293,12 @@ export class GeneralTab {
 							const reader = new FileReader();
 							reader.onload = async (e) => {
 								try {
-									const data = JSON.parse(e.target?.result as string);
+									const data = JSON.parse(e.target?.result as string) as Partial<FlowPluginSettings>;
 									this.plugin.settings = Object.assign({}, this.plugin.settings, data);
 									await this.plugin.saveSettings();
 									this.settingTab.display();
 									new Notice(isVi ? "FLOW: Đã nhập cấu hình thành công." : "FLOW: Settings imported successfully.");
-								} catch (err) {
+								} catch {
 									new Notice(isVi ? "FLOW: File JSON không hợp lệ." : "FLOW: Invalid JSON file.");
 								}
 							};
@@ -239,7 +332,7 @@ export class GeneralTab {
 		// ── Credits & Support ──
 		const creditSection = containerEl.createDiv("flow-credits-section");
 
-		creditSection.createEl("h4", { text: "Credits & Support", cls: "flow-credits-title" });
+		creditSection.createEl("h4", { text: "Credits & support", cls: "flow-credits-title" });
 
 		// Add Logo Link
 		const logoLink = creditSection.createEl("a");

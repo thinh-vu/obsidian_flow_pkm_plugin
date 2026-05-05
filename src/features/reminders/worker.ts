@@ -1,4 +1,4 @@
-import { Notice } from "obsidian";
+import { Notice, moment, TFile } from "obsidian";
 import type FlowPlugin from "../../main";
 import { FlowRole, ReminderConfig } from "../../types";
 import { collectVaultStats } from "../dashboard/stats-collector";
@@ -65,13 +65,15 @@ export class NotificationWorker {
 		const oneWeekMs = 7 * oneDayMs;
 		const nowObj = new Date(now);
 
+		await this.evaluateTaskReminders();
+
 		// consolidateCapture
 		if (reminders.consolidateCapture.enabled && this.isReminderActive(reminders.consolidateCapture, nowObj)) {
 			const captureStats = stats.roleStats[FlowRole.CAPTURE];
 			if (captureStats && captureStats.captureRawNotes > 0) {
 				const timeSinceLast = now - reminders.consolidateCapture.lastTriggered;
 				if (timeSinceLast > oneDayMs) {
-					this.triggerNotification(L.consolidateCapture as string, REMINDER_MESSAGES.consolidateCapture);
+					this.triggerNotification(L.consolidateCapture, REMINDER_MESSAGES.consolidateCapture);
 					reminders.consolidateCapture.lastTriggered = now;
 					settingsChanged = true;
 				}
@@ -83,7 +85,7 @@ export class NotificationWorker {
 			const timeSinceLast = now - reminders.dailyNote.lastTriggered;
 			// 12 hours minimum between daily notes to avoid spam but catch them once a day
 			if (timeSinceLast > 12 * 60 * 60 * 1000) {
-				this.triggerNotification(L.dailyNote as string, REMINDER_MESSAGES.dailyNote);
+				this.triggerNotification(L.dailyNote, REMINDER_MESSAGES.dailyNote);
 				reminders.dailyNote.lastTriggered = now;
 				settingsChanged = true;
 			}
@@ -93,7 +95,7 @@ export class NotificationWorker {
 		if (reminders.weeklyReview.enabled && this.isReminderActive(reminders.weeklyReview, nowObj)) {
 			const timeSinceLast = now - reminders.weeklyReview.lastTriggered;
 			if (timeSinceLast > oneWeekMs) {
-				this.triggerNotification(L.weeklyReview as string, REMINDER_MESSAGES.weeklyReview);
+				this.triggerNotification(L.weeklyReview, REMINDER_MESSAGES.weeklyReview);
 				reminders.weeklyReview.lastTriggered = now;
 				settingsChanged = true;
 			}
@@ -103,7 +105,7 @@ export class NotificationWorker {
 		if (reminders.publishContent.enabled && this.isReminderActive(reminders.publishContent, nowObj)) {
 			const timeSinceLast = now - reminders.publishContent.lastTriggered;
 			if (timeSinceLast > oneWeekMs) {
-				this.triggerNotification(L.publishContent as string, REMINDER_MESSAGES.publishContent);
+				this.triggerNotification(L.publishContent, REMINDER_MESSAGES.publishContent);
 				reminders.publishContent.lastTriggered = now;
 				settingsChanged = true;
 			}
@@ -115,7 +117,7 @@ export class NotificationWorker {
 			if (forgeStats && forgeStats.subfolderCount > settings.maxSubfolders) {
 				const timeSinceLast = now - reminders.forgeCleanup.lastTriggered;
 				if (timeSinceLast > oneDayMs) {
-					this.triggerNotification(L.forgeCleanup as string, REMINDER_MESSAGES.forgeCleanup);
+					this.triggerNotification(L.forgeCleanup, REMINDER_MESSAGES.forgeCleanup);
 					reminders.forgeCleanup.lastTriggered = now;
 					settingsChanged = true;
 				}
@@ -126,6 +128,51 @@ export class NotificationWorker {
 			await this.plugin.saveSettings();
 		}
 	}
+
+	private async evaluateTaskReminders() {
+		const trackFolder = this.plugin.settings.folderMap[FlowRole.TRACK] || "2. Track";
+		const todayStr = moment().format("YYYY-MM-DD");
+		const currentMinuteStr = moment().format("YYYY-MM-DD HH:mm");
+		
+		const todayFile = this.plugin.app.vault.getAbstractFileByPath(`${trackFolder}/${todayStr}.md`);
+		if (!(todayFile instanceof TFile)) return;
+
+		const content = await this.plugin.app.vault.cachedRead(todayFile);
+		const lines = content.split('\n');
+
+		// Simple local state to avoid firing multiple times for the same task in the same minute
+		// Though since interval is exactly 60s, it usually fires once.
+		if (!this.notifiedTaskMins) this.notifiedTaskMins = new Set<string>();
+
+		for (const line of lines) {
+			// Find uncompleted tasks `- [ ] `
+			if (!line.match(/^[ \t]*[-*+]\s+\[ \]\s+/)) continue;
+
+			// Extract (@YYYY-MM-DD HH:mm)
+			const reminderMatch = line.match(/\(@(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\)/);
+			if (!reminderMatch || !reminderMatch[1]) continue;
+
+			const taskTimeStr = reminderMatch[1];
+			
+			// If it matches exactly current minute
+			if (taskTimeStr === currentMinuteStr) {
+				const uniqueKey = `${todayStr}:${taskTimeStr}:${line}`;
+				if (!this.notifiedTaskMins.has(uniqueKey)) {
+					// Extract clean text for notification
+					let cleanText = line.replace(/^[ \t]*[-*+]\s+\[ \]\s+/, "");
+					cleanText = cleanText.replace(reminderMatch[0], "").trim();
+					
+					this.triggerNotification("Task Reminder", cleanText);
+					this.notifiedTaskMins.add(uniqueKey);
+					
+					// Optional: Keep set from growing infinitely
+					if (this.notifiedTaskMins.size > 1000) this.notifiedTaskMins.clear();
+				}
+			}
+		}
+	}
+	
+	private notifiedTaskMins?: Set<string>;
 
 	private triggerNotification(title: string, body: string) {
 		// Always show an internal notice to ensure it doesn't quietly fail

@@ -14,6 +14,7 @@ import { renderFlowProgressionTab } from "./tabs/flow-progression";
 import { NavigatorView } from "./views/navigator-view";
 import { StatisticsView } from "./views/statistics-view";
 import { TaxonomyView } from "./views/taxonomy-view";
+import { TaskView } from "./views/task-view";
 
 let echartsModule: typeof import("echarts/core") | null = null;
 async function getECharts() {
@@ -25,7 +26,7 @@ async function getECharts() {
 }
 
 type DashboardTab = "properties" | "tags" | "activity" | "mood" | "taxonomy";
-export type DashboardView = "statistics" | "navigator" | "flow";
+export type DashboardView = "statistics" | "navigator" | "flow" | "tasks";
 
 export class DashboardModal extends Modal {
 	private settings: FlowPluginSettings;
@@ -36,6 +37,7 @@ export class DashboardModal extends Modal {
 	private controlsContainer: HTMLElement | null = null;
 	private chartContainer: HTMLElement | null = null;
 	private navigatorContainer: HTMLElement | null = null;
+	private taskContainer: HTMLElement | null = null;
 	private overviewContainer: HTMLElement | null = null;
 	private viewToggleBar: HTMLElement | null = null;
 
@@ -43,6 +45,7 @@ export class DashboardModal extends Modal {
 	private navigatorViewInstance: NavigatorView | null = null;
 	private statisticsViewInstance: StatisticsView | null = null;
 	private taxonomyViewInstance: TaxonomyView | null = null;
+	private taskViewInstance: TaskView | null = null;
 
 	constructor(app: App, settings: FlowPluginSettings, initialView: DashboardView = "flow") {
 		super(app);
@@ -61,21 +64,21 @@ export class DashboardModal extends Modal {
 
 		// Header Row
 		const headerContainer = contentEl.createDiv("flow-dashboard-header");
-		headerContainer.style.display = "flex";
-		headerContainer.style.justifyContent = "center";
-		headerContainer.style.alignItems = "center";
-		headerContainer.style.position = "relative";
+		headerContainer.setCssProps({ "display": "flex" })
+		headerContainer.setCssProps({ "justify-content": "center" })
+		headerContainer.setCssProps({ "align-items": "center" })
+		headerContainer.setCssProps({ "position": "relative" })
 		const titleRow = headerContainer.createDiv();
-		titleRow.style.cssText = "display:flex;align-items:center;justify-content:center;gap:8px;";
+		titleRow.setCssProps({ "display": "flex", "align-items": "center", "justify-content": "center", "gap": "8px" })
 		const wavesIcon = titleRow.createSpan();
 		setIcon(wavesIcon, "waves");
-		wavesIcon.style.cssText = "display:flex;align-items:center;color:var(--text-accent);";
-		titleRow.createEl("h2", { text: "FLOW Dashboard", cls: "flow-dashboard-title" });
-		titleRow.querySelector("h2")!.style.margin = "0";
+		wavesIcon.setCssProps({ "display": "flex", "align-items": "center", "color": "var(--text-accent)" })
+		titleRow.createEl("h2", { text: "Flow dashboard", cls: "flow-dashboard-title" });
+		titleRow.querySelector("h2")!.setCssProps({ "margin": "0" });
 
 
 		this.overviewContainer = contentEl.createDiv("flow-overview-container");
-		this.overviewContainer.style.marginTop = "24px";
+		this.overviewContainer.setCssProps({ "margin-top": "24px" })
 
 		// Top-level view toggle: Statistics vs Navigator
 		this.renderViewToggle(contentEl);
@@ -85,21 +88,27 @@ export class DashboardModal extends Modal {
 
 		// Controls container
 		this.controlsContainer = contentEl.createDiv("flow-dashboard-controls");
-		this.controlsContainer.style.marginBottom = "10px";
-		this.controlsContainer.style.display = "flex";
-		this.controlsContainer.style.justifyContent = "center";
+		this.controlsContainer.setCssProps({ "margin-bottom": "10px" })
+		this.controlsContainer.setCssProps({ "display": "flex" })
+		this.controlsContainer.setCssProps({ "justify-content": "center" })
 		this.renderControls();
 
 		// Chart container
 		this.chartContainer = contentEl.createDiv("flow-chart-container");
 		this.chartContainer.addClass("flow-dashboard-ui-2");
-		this.chartContainer.style.display = "flex";
+		this.chartContainer.setCssProps({ "display": "flex" })
 		this.chartContainer.addClass("flow-dashboard-ui-3");
 
 		// Navigator container
 		this.navigatorContainer = contentEl.createDiv("flow-navigator-container");
 		this.navigatorContainer.addClass("flow-dashboard-ui-4");
-		this.navigatorContainer.style.display = "none";
+		this.navigatorContainer.setCssProps({ "display": "none" })
+
+		// Task container
+		this.taskContainer = contentEl.createDiv("flow-task-container");
+		this.taskContainer.addClass("flow-dashboard-ui-task"); // Use a semantic class or similar structure
+		this.taskContainer.setCssProps({ "display": "none" })
+		this.taskContainer.setCssProps({ "height": "100%" }) // Needed for scrolling list
 
 		// Preload ECharts module if needed
 		const echartsLoaded = await getECharts();
@@ -108,6 +117,7 @@ export class DashboardModal extends Modal {
 		this.navigatorViewInstance = new NavigatorView(this.app, this.settings, this.navigatorContainer, () => this.close());
 		this.statisticsViewInstance = new StatisticsView(this.app, this.settings, this.chartContainer, echartsLoaded);
 		this.taxonomyViewInstance = new TaxonomyView(this.app, this.settings, this.chartContainer, echartsLoaded);
+		this.taskViewInstance = new TaskView(this.app, this.settings, this.taskContainer, () => this.close());
 
 		window.addEventListener("resize", this.handleResize);
 
@@ -116,9 +126,10 @@ export class DashboardModal extends Modal {
 		this.stats = collectVaultStats(this.app, this.settings.folderMap, this.settings);
 
 		// Persist cache
-		this.settings.lastCachedStats = this.stats as unknown as Record<string, any>;
-		const plugin = (this.app as any).plugins?.plugins?.["obsidian-flow"];
-		if (plugin && plugin.saveSettings) plugin.saveSettings();
+		this.settings.lastCachedStats = this.stats as unknown as Record<string, unknown>;
+		const appWithPlugins = this.app as App & { plugins?: { plugins?: Record<string, { saveSettings?: () => void }> } };
+		const plugin = appWithPlugins.plugins?.plugins?.["obsidian-flow"];
+		if (plugin && typeof plugin.saveSettings === "function") plugin.saveSettings();
 
 		// Render immediately
 		if (this.overviewContainer) {
@@ -151,24 +162,35 @@ export class DashboardModal extends Modal {
 
 		const row = container.createDiv("flow-dashboard-overview");
 
-		const createStatBox = (label: string, value: string | number) => {
+		const createStatBox = (iconName: string, label: string, value: string | number) => {
 			const box = row.createDiv("flow-stat-box");
-			box.createDiv("flow-stat-label").setText(label);
+			const titleWrap = box.createDiv("flow-stat-label");
+			titleWrap.setCssProps({ "display": "flex" })
+			titleWrap.setCssProps({ "align-items": "center" })
+			titleWrap.setCssProps({ "gap": "6px" })
+			titleWrap.setCssProps({ "justify-content": "center" })
+			
+			const iconEl = titleWrap.createSpan();
+			setIcon(iconEl, iconName);
+			(iconEl.querySelector("svg") as SVGElement)?.setAttribute("width", "14");
+			(iconEl.querySelector("svg") as SVGElement)?.setAttribute("height", "14");
+			
+			titleWrap.createSpan({ text: label });
 			box.createDiv("flow-stat-value").setText(String(value));
 		};
 
-		createStatBox(this.settings.language === "vi" ? "📝 Tổng Ghi chú Hoạt động" : "📝 Total Active Notes", this.stats.totalActiveNotes);
+		createStatBox("file-text", this.settings.language === "vi" ? "TỔNG GHI CHÚ HOẠT ĐỘNG" : "TOTAL ACTIVE NOTES", this.stats.totalActiveNotes);
 
-		createStatBox("📥 Capture", this.stats.notesPerFolder[FlowRole.CAPTURE] || 0);
-		createStatBox("🗓️ Track", this.stats.notesPerFolder[FlowRole.TRACK] || 0);
-		createStatBox("🔨 Forge", this.stats.notesPerFolder[FlowRole.FORGE] || 0);
-		createStatBox("🏛️ Exhibit", this.stats.notesPerFolder[FlowRole.EXHIBIT] || 0);
+		createStatBox("inbox", "CAPTURE", this.stats.notesPerFolder[FlowRole.CAPTURE] || 0);
+		createStatBox("calendar", "TRACK", this.stats.notesPerFolder[FlowRole.TRACK] || 0);
+		createStatBox("hammer", "FORGE", this.stats.notesPerFolder[FlowRole.FORGE] || 0);
+		createStatBox("library", "EXHIBIT", this.stats.notesPerFolder[FlowRole.EXHIBIT] || 0);
 	}
 
 	private renderViewToggle(container: HTMLElement) {
 		if (!this.viewToggleBar) {
 			this.viewToggleBar = container.createDiv("flow-view-toggle");
-			this.viewToggleBar.style.display = "flex";
+			this.viewToggleBar.setCssProps({ "display": "flex" })
 			this.viewToggleBar.addClass("flow-dashboard-ui-5");
 		}
 		this.viewToggleBar.empty();
@@ -176,8 +198,9 @@ export class DashboardModal extends Modal {
 		const isVi = this.settings.language === "vi";
 		const views: { id: DashboardView; label: string; icon: string }[] = [
 			{ id: "flow", label: isVi ? "Tiến trình" : "Progress", icon: "activity" },
-			{ id: "statistics", label: isVi ? "Thống kê" : "Statistics", icon: "bar-chart-2" },
 			{ id: "navigator", label: isVi ? "Bảng nội dung" : "Navigator", icon: "table" },
+			{ id: "tasks", label: isVi ? "Nhiệm vụ" : "Tasks", icon: "check-square" },
+			{ id: "statistics", label: isVi ? "Thống kê" : "Statistics", icon: "bar-chart-2" },
 		];
 
 		for (const v of views) {
@@ -229,7 +252,7 @@ export class DashboardModal extends Modal {
 				tabBar.querySelectorAll(".flow-tab").forEach(t => t.removeClass("active"));
 				btn.addClass("active");
 
-				this.activeTab = tab.id as DashboardTab;
+				this.activeTab = tab.id;
 				this.renderControls();
 				this.renderView();
 			});
@@ -242,41 +265,55 @@ export class DashboardModal extends Modal {
 	}
 
 	private renderView() {
-		if (!this.chartContainer || !this.navigatorContainer) return;
+		if (!this.chartContainer || !this.navigatorContainer || !this.taskContainer) return;
 		const tabBar = this.contentEl.querySelector("#flow-chart-tabs") as HTMLElement;
 
 		if (this.activeView === "navigator") {
-			this.chartContainer.style.display = "none";
-			if (this.controlsContainer) this.controlsContainer.style.display = "none";
-			if (tabBar) tabBar.style.display = "none";
-			if (this.overviewContainer) this.overviewContainer.style.display = "";
-			this.navigatorContainer.style.display = "block";
+			this.chartContainer.setCssProps({ "display": "none" })
+			if (this.controlsContainer) this.controlsContainer.setCssProps({ "display": "none" })
+			if (tabBar) tabBar.setCssProps({ "display": "none" })
+			if (this.overviewContainer) this.overviewContainer.setCssProps({ "display": "" })
+			this.taskContainer.setCssProps({ "display": "none" })
+			this.navigatorContainer.setCssProps({ "display": "block" })
 			
 			if (this.stats && this.navigatorViewInstance) {
 				this.navigatorViewInstance.render(this.stats);
 			}
+		} else if (this.activeView === "tasks") {
+			this.chartContainer.setCssProps({ "display": "none" })
+			this.navigatorContainer.setCssProps({ "display": "none" })
+			if (this.controlsContainer) this.controlsContainer.setCssProps({ "display": "none" })
+			if (tabBar) tabBar.setCssProps({ "display": "none" })
+			if (this.overviewContainer) this.overviewContainer.setCssProps({ "display": "" })
+			this.taskContainer.setCssProps({ "display": "block" })
+			
+			if (this.stats && this.taskViewInstance) {
+				void this.taskViewInstance.render(this.stats);
+			}
 		} else if (this.activeView === "flow") {
-			this.navigatorContainer.style.display = "none";
-			if (tabBar) tabBar.style.display = "none";
-			if (this.controlsContainer) this.controlsContainer.style.display = "none";
-			if (this.overviewContainer) this.overviewContainer.style.display = "none";
+			this.navigatorContainer.setCssProps({ "display": "none" })
+			this.taskContainer.setCssProps({ "display": "none" })
+			if (tabBar) tabBar.setCssProps({ "display": "none" })
+			if (this.controlsContainer) this.controlsContainer.setCssProps({ "display": "none" })
+			if (this.overviewContainer) this.overviewContainer.setCssProps({ "display": "none" })
 			
 			// Clean up previous charts if any
 			if (this.statisticsViewInstance) this.statisticsViewInstance.destroy();
 			if (this.taxonomyViewInstance) this.taxonomyViewInstance.destroy();
 			
-			this.chartContainer.style.display = "flex";
+			this.chartContainer.setCssProps({ "display": "flex" })
 			this.chartContainer.empty();
 			
 			if (this.stats) {
 				renderFlowProgressionTab(this.chartContainer, this.stats, this.app, this.settings);
 			}
 		} else { // Statistics mode
-			this.navigatorContainer.style.display = "none";
-			if (tabBar) tabBar.style.display = "flex";
-			if (this.controlsContainer) this.controlsContainer.style.display = "flex";
-			if (this.overviewContainer) this.overviewContainer.style.display = "";
-			this.chartContainer.style.display = "flex";
+			this.navigatorContainer.setCssProps({ "display": "none" })
+			this.taskContainer.setCssProps({ "display": "none" })
+			if (tabBar) tabBar.setCssProps({ "display": "flex" })
+			if (this.controlsContainer) this.controlsContainer.setCssProps({ "display": "flex" })
+			if (this.overviewContainer) this.overviewContainer.setCssProps({ "display": "" })
+			this.chartContainer.setCssProps({ "display": "flex" })
 			
 			this.renderControls();
 			
@@ -286,7 +323,7 @@ export class DashboardModal extends Modal {
 					if (this.taxonomyViewInstance) this.taxonomyViewInstance.render(this.stats);
 				} else {
 					if (this.taxonomyViewInstance) this.taxonomyViewInstance.destroy();
-					if (this.statisticsViewInstance) this.statisticsViewInstance.render(this.stats, this.activeTab as "properties" | "tags" | "activity" | "mood");
+					if (this.statisticsViewInstance) this.statisticsViewInstance.render(this.stats, this.activeTab);
 				}
 			}
 		}

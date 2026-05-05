@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/await-thenable */
 import { App, setIcon, TFile } from "obsidian";
 import { FlowPluginSettings, FlowRole } from "../../../types";
 import { VaultStats, extractWikilinkName } from "../stats-collector";
@@ -26,10 +27,10 @@ export class NavigatorView {
 	public render(stats: VaultStats) {
 		this.stats = stats;
 		this.container.empty();
-		this.container.style.overflow = "hidden";
-		this.container.style.display = "flex";
-		this.container.style.flexDirection = "column";
-		this.container.style.height = "100%";
+		this.container.setCssProps({ "overflow": "hidden" })
+		this.container.setCssProps({ "display": "flex" })
+		this.container.setCssProps({ "flex-direction": "column" })
+		this.container.setCssProps({ "height": "100%" })
 
 		const baseCols = ["#", "Name", "Folder", "Created", "Modified", "Tags", "Impact", "Urgency", "Category", "Channel", "Publish", "Summary", "Feeling", "Aliases"];
 		const allColNames = [...baseCols, ...this.navigatorCustomCols];
@@ -44,11 +45,11 @@ export class NavigatorView {
 
 		const toolbar = this.container.createDiv();
 		toolbar.addClass("flow-dashboard-ui-29");
-		toolbar.style.position = "relative";
-		toolbar.style.zIndex = "100";
+		toolbar.setCssProps({ "position": "relative" })
+		toolbar.setCssProps({ "z-index": "100" })
 
 		const filtersDiv = toolbar.createDiv();
-		filtersDiv.style.cssText = "display:flex;gap:8px;flex-wrap:nowrap;align-items:center;flex-shrink:0;";
+		filtersDiv.setCssProps({ "display": "flex", "gap": "8px", "flex-wrap": "nowrap", "align-items": "center", "flex-shrink": "0" })
 
 		const roleIcons: Record<string, string> = {
 			[FlowRole.CAPTURE]: "inbox",
@@ -67,21 +68,21 @@ export class NavigatorView {
 		if (this.navigatorActiveFilters.length > 0) {
 			const clearBtn = filtersDiv.createEl("button");
 			clearBtn.addClass("flow-dashboard-ui-34");
-			clearBtn.style.cssText = "padding:4px 8px;display:flex;align-items:center;gap:4px;color:var(--text-error);border-color:var(--text-error);";
+			clearBtn.setCssProps({ "padding": "4px 8px", "display": "flex", "align-items": "center", "gap": "4px", "color": "var(--text-error)", "border-color": "var(--text-error)" })
 			const clearIcon = clearBtn.createSpan();
 			setIcon(clearIcon, "x");
 			clearBtn.title = "Clear filters";
 			clearBtn.onclick = () => {
 				this.navigatorActiveFilters = [];
 				this.navigatorCurrentPage = 1;
-				this.render(this.stats);
+				void this.render(this.stats);
 			};
 		}
 
 		const createFilterGroupBtn = (groupLabel: string, groupIcon: string, items: { label: string; value: string; icon?: string }[], filterType: string) => {
 			if (items.length === 0) return;
 			const btnWrap = filtersDiv.createDiv();
-			btnWrap.style.position = "relative";
+			btnWrap.setCssProps({ "position": "relative" })
 
 			const btn = btnWrap.createEl("button");
 			btn.addClass("flow-dashboard-ui-31");
@@ -97,11 +98,11 @@ export class NavigatorView {
 				? (selectedItems.length === 1 ? selectedItems[0]!.label : `${groupLabel} (${selectedItems.length})`) 
 				: groupLabel;
 			const labelSpan = btn.createSpan({ text: labelText });
-			if (isActiveGroup) labelSpan.style.fontWeight = "bold";
+			if (isActiveGroup) labelSpan.setCssProps({ "font-weight": "bold" })
 
 			const chevron = btn.createSpan();
 			setIcon(chevron, "chevron-down");
-			chevron.style.cssText = "display:flex;align-items:center;margin-left:4px;opacity:0.5;";
+			chevron.setCssProps({ "display": "flex", "align-items": "center", "margin-left": "4px", "opacity": "0.5" })
 
 			btn.onclick = (e) => {
 				e.stopPropagation();
@@ -109,21 +110,21 @@ export class NavigatorView {
 
 				const popup = this.container.createDiv("flow-filter-popup");
 				const rect = btnWrap.getBoundingClientRect();
-				popup.style.cssText = `position:fixed; top:${rect.bottom + 4}px; left:${rect.left}px; z-index:99999; min-width:180px; max-height:300px; overflow-y:auto; background:var(--background-primary); border:1px solid var(--background-modifier-border); border-radius:8px; padding:6px 0; box-shadow:0 8px 24px rgba(0,0,0,0.15);`;
+				popup.setCssProps({ "position": `fixed`, "top": `${rect.bottom + 4}px`, "left": `${rect.left}px`, "z-index": `99999`, "min-width": `180px`, "max-height": `300px`, "overflow-y": `auto`, "background": `var(--background-primary)`, "border": `1px solid var(--background-modifier-border)`, "border-radius": `8px`, "padding": `6px 0`, "box-shadow": `0 8px 24px rgba(0,0,0,0.15)` })
 
 				for (const item of items) {
 					const row = popup.createDiv();
-					row.style.cssText = "display:flex;align-items:center;gap:8px;padding:6px 16px;cursor:pointer;font-size:0.85em;justify-content:space-between;";
-					row.onmouseenter = () => row.style.backgroundColor = "var(--background-modifier-hover)";
-					row.onmouseleave = () => row.style.backgroundColor = "transparent";
+					row.setCssProps({ "display": "flex", "align-items": "center", "gap": "8px", "padding": "6px 16px", "cursor": "pointer", "font-size": "0.85em", "justify-content": "space-between" })
+					row.onmouseenter = () => row.setCssProps({ "background-color": "var(--background-modifier-hover)" })
+					row.onmouseleave = () => row.setCssProps({ "background-color": "transparent" })
 
 					const leftSide = row.createDiv();
-					leftSide.style.cssText = "display:flex;align-items:center;gap:8px;";
+					leftSide.setCssProps({ "display": "flex", "align-items": "center", "gap": "8px" })
 
 					if (item.icon) {
 						const iEl = leftSide.createSpan();
 						setIcon(iEl, item.icon);
-						iEl.style.cssText = "display:flex;align-items:center;color:var(--text-muted);";
+						iEl.setCssProps({ "display": "flex", "align-items": "center", "color": "var(--text-muted)" });
 						(iEl.querySelector("svg") as SVGElement)?.setAttribute("width", "14");
 						(iEl.querySelector("svg") as SVGElement)?.setAttribute("height", "14");
 					}
@@ -131,12 +132,12 @@ export class NavigatorView {
 
 					const isActive = this.navigatorActiveFilters.some(f => f.type === filterType && f.value === item.value);
 					if (isActive) {
-						leftSide.style.fontWeight = "700";
-						leftSide.style.color = "var(--interactive-accent)";
+						leftSide.setCssProps({ "font-weight": "700" })
+						leftSide.setCssProps({ "color": "var(--interactive-accent)" })
 						
 						const rightSide = row.createSpan();
 						setIcon(rightSide, "check");
-						rightSide.style.color = "var(--interactive-accent)";
+						rightSide.setCssProps({ "color": "var(--interactive-accent)" });
 						(rightSide.querySelector("svg") as SVGElement)?.setAttribute("width", "14");
 						(rightSide.querySelector("svg") as SVGElement)?.setAttribute("height", "14");
 					}
@@ -148,7 +149,7 @@ export class NavigatorView {
 						
 						this.navigatorCurrentPage = 1;
 						popup.remove();
-						this.render(this.stats);
+						void this.render(this.stats);
 					};
 				}
 
@@ -163,7 +164,7 @@ export class NavigatorView {
 		};
 
 		const folderItems = orderedRoles.map(role => {
-			const folderName = this.settings.folderMap[role as FlowRole];
+			const folderName = this.settings.folderMap[role];
 			const cleanLabel = folderName?.replace(/^\d+\.\s*/, "") || role;
 			return { label: cleanLabel, value: role, icon: roleIcons[role] || "folder" };
 		}).filter(i => i.label);
@@ -278,7 +279,7 @@ export class NavigatorView {
 		}
 
 		const spacer = toolbar.createDiv();
-		spacer.style.flex = "1";
+		spacer.setCssProps({ "flex": "1" })
 
 		const rightControlsDiv = toolbar.createDiv();
 		rightControlsDiv.addClass("flow-dashboard-ui-37");
@@ -292,33 +293,33 @@ export class NavigatorView {
 
 		const searchInput = searchWrapper.createEl("input", { type: "text", placeholder: "Search notes..." });
 		searchInput.addClass("flow-dashboard-ui-40");
-		searchInput.style.paddingLeft = "28px";
+		searchInput.setCssProps({ "padding-left": "28px" })
 		searchInput.value = this.navigatorSearchQuery;
 
 		const stripeBtn = rightControlsDiv.createEl("button");
 		setIcon(stripeBtn, "align-justify");
-		stripeBtn.title = "Toggle Striped Rows";
-		stripeBtn.style.cursor = "pointer";
-		stripeBtn.style.padding = "4px 8px";
+		stripeBtn.title = "Toggle striped rows";
+		stripeBtn.setCssProps({ "cursor": "pointer" })
+		stripeBtn.setCssProps({ "padding": "4px 8px" })
 		if (this.navigatorStripedRows) {
-			stripeBtn.style.backgroundColor = "var(--interactive-accent)";
-			stripeBtn.style.color = "white";
+			stripeBtn.setCssProps({ "background-color": "var(--interactive-accent)" })
+			stripeBtn.setCssProps({ "color": "white" })
 		}
 		stripeBtn.onclick = () => {
 			this.navigatorStripedRows = !this.navigatorStripedRows;
 			if (this.navigatorStripedRows) {
-				stripeBtn.style.backgroundColor = "var(--interactive-accent)";
-				stripeBtn.style.color = "white";
+				stripeBtn.setCssProps({ "background-color": "var(--interactive-accent)" })
+				stripeBtn.setCssProps({ "color": "white" })
 			} else {
-				stripeBtn.style.backgroundColor = "transparent";
-				stripeBtn.style.color = "var(--text-normal)";
+				stripeBtn.setCssProps({ "background-color": "transparent" })
+				stripeBtn.setCssProps({ "color": "var(--text-normal)" })
 			}
-			triggerRenderRows();
+			void triggerRenderRows();
 		};
 
 		const colBtn = rightControlsDiv.createEl("button");
 		setIcon(colBtn, "columns");
-		colBtn.title = "Show/Hide Columns";
+		colBtn.title = "Show/hide columns";
 		colBtn.addClass("flow-dashboard-ui-41");
 
 		colBtn.onclick = (e) => {
@@ -328,14 +329,14 @@ export class NavigatorView {
 
 			const rect = colBtn.getBoundingClientRect();
 			popup = this.container.createDiv("flow-col-popup");
-			popup.style.cssText = `position:fixed; top:${rect.bottom + 4}px; right:${window.innerWidth - rect.right}px; z-index:99999; min-width:180px; max-height:400px; overflow-y:auto; background:var(--background-primary); border:1px solid var(--background-modifier-border); border-radius:6px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,0.15);`;
+			popup.setCssProps({ "position": `fixed`, "top": `${rect.bottom + 4}px`, "right": `${window.innerWidth - rect.right}px`, "z-index": `99999`, "min-width": `180px`, "max-height": `400px`, "overflow-y": `auto`, "background": `var(--background-primary)`, "border": `1px solid var(--background-modifier-border)`, "border-radius": `6px`, "padding": `10px`, "box-shadow": `0 8px 24px rgba(0,0,0,0.15)` })
 
 			allColNames.forEach((name, i) => {
 				const row = popup.createDiv();
-				row.style.cssText = "display:flex;align-items:center;gap:6px;padding:3px 0;";
-				const cb = row.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+				row.setCssProps({ "display": "flex", "align-items": "center", "gap": "6px", "padding": "3px 0" })
+				const cb = row.createEl("input", { type: "checkbox" });
 				cb.checked = this.navigatorVisibleCols[i] ?? true;
-				cb.style.margin = "0";
+				cb.setCssProps({ "margin": "0" })
 				row.createEl("label", { text: name });
 				cb.onchange = () => {
 					this.navigatorVisibleCols[i] = cb.checked;
@@ -344,20 +345,20 @@ export class NavigatorView {
 			});
 
 			const newColRow = popup.createDiv();
-			newColRow.style.cssText = "margin-top:8px;border-top:1px solid var(--background-modifier-border);padding-top:8px;display:flex;gap:4px;";
+			newColRow.setCssProps({ "margin-top": "8px", "border-top": "1px solid var(--background-modifier-border)", "padding-top": "8px", "display": "flex", "gap": "4px" })
 			const newColInput = newColRow.createEl("input", { type: "text", placeholder: "Custom prop..." });
-			newColInput.style.flex = "1";
-			newColInput.style.width = "100px";
+			newColInput.setCssProps({ "flex": "1" })
+			newColInput.setCssProps({ "width": "100px" })
 			const newColAdd = newColRow.createEl("button");
 			setIcon(newColAdd, "plus");
-			newColAdd.style.padding = "4px";
+			newColAdd.setCssProps({ "padding": "4px" })
 			newColAdd.onclick = () => {
 				const val = newColInput.value.trim();
 				if (val && !allColNames.includes(val)) {
 					this.navigatorCustomCols.push(val);
 					this.navigatorVisibleCols.push(true);
 					popup.remove();
-					this.render(this.stats);
+					void this.render(this.stats);
 				}
 			};
 
@@ -378,39 +379,42 @@ export class NavigatorView {
 		const pageInfo = paginationDiv.createSpan({ text: `Page ${this.navigatorCurrentPage}` });
 		const prevBtn = paginationDiv.createEl("button");
 		setIcon(prevBtn, "chevron-left");
-		prevBtn.style.padding = "4px";
+		prevBtn.setCssProps({ "padding": "4px" })
 		const nextBtn = paginationDiv.createEl("button");
 		setIcon(nextBtn, "chevron-right");
-		nextBtn.style.padding = "4px";
+		nextBtn.setCssProps({ "padding": "4px" })
 
 		const tableArea = this.container.createDiv();
 		tableArea.addClass("flow-dashboard-ui-46");
 
 		const quickActionBar = this.container.createDiv();
-		quickActionBar.style.cssText = `display:none; align-items:center; gap:8px; padding:8px 12px; background:var(--background-secondary); border-radius:8px; border:1px solid var(--interactive-accent); margin-bottom:8px; flex-wrap:wrap;`;
+		quickActionBar.setCssProps({ "display": "none", "align-items": "center", "gap": "8px", "padding": "8px 12px", "background": "var(--background-secondary)", "border-radius": "8px", "border": "1px solid var(--interactive-accent)", "margin-bottom": "8px", "flex-wrap": "wrap" })
 		const qaCountLabel = quickActionBar.createSpan();
-		qaCountLabel.style.cssText = "font-size:0.85em;color:var(--text-muted);margin-right:4px;";
+		qaCountLabel.setCssProps({ "font-size": "0.85em", "color": "var(--text-muted)", "margin-right": "4px" })
 
 		const createQABtn = (label: string, icon: string, color?: string) => {
 			const btn = quickActionBar.createEl("button");
-			btn.style.cssText = `display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;padding:6px 14px;font-size:0.85em;border-radius:6px;cursor:pointer;height:auto;min-height:32px;white-space:nowrap;line-height:1;width:auto;flex-wrap:nowrap;${color ? `color:${color};border-color:${color};` : ""}`;
+			btn.setCssProps({ "display": `flex`, "flex-direction": `row`, "align-items": `center`, "justify-content": `center`, "gap": `6px`, "padding": `6px 14px`, "font-size": `0.85em`, "border-radius": `6px`, "cursor": `pointer`, "height": `auto`, "min-height": `32px`, "white-space": `nowrap`, "line-height": `1`, "width": `auto`, "flex-wrap": `nowrap` });
+			if (color) {
+				btn.setCssProps({ "color": color, "border-color": color });
+			}
 			const ic = btn.createSpan();
-			ic.style.cssText = "display:flex;align-items:center;justify-content:center;";
+			ic.setCssProps({ "display": "flex", "align-items": "center", "justify-content": "center" })
 			setIcon(ic, icon);
 			btn.createSpan({ text: label });
 			return btn;
 		};
 
-		const btnAddTag = createQABtn(isVi ? "Gắn tag" : "Add Tag", "tag");
-		const btnAddProp = createQABtn(isVi ? "Gắn properties" : "Add Property", "list-plus");
+		const btnAddTag = createQABtn(isVi ? "Gắn tag" : "Add tag", "tag");
+		const btnAddProp = createQABtn(isVi ? "Gắn properties" : "Add property", "list-plus");
 		const btnMove = createQABtn(isVi ? "Di chuyển" : "Move", "folder-input");
 		const btnDelete = createQABtn(isVi ? "Xoá" : "Delete", "trash-2", "var(--text-error)");
 
 		const updateQABar = () => {
 			const count = this.navigatorSelectedFiles.size;
-			if (count === 0) quickActionBar.style.display = "none";
+			if (count === 0) quickActionBar.setCssProps({ "display": "none" })
 			else {
-				quickActionBar.style.display = "flex";
+				quickActionBar.setCssProps({ "display": "flex" })
 				qaCountLabel.setText(isVi ? `${count} file được chọn:` : `${count} selected:`);
 			}
 		};
@@ -427,27 +431,27 @@ export class NavigatorView {
 			if (selectedFiles.length === 0) return;
 
 			const popup = this.container.createDiv();
-			popup.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:var(--background-primary);border:1px solid var(--background-modifier-border);border-radius:10px;padding:20px;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.2);`;
-			popup.createEl("h4", { text: isVi ? "Gắn tag" : "Add Tag" }).style.margin = "0 0 12px 0";
+			popup.setCssProps({ "position": "fixed", "top": "50%", "left": "50%", "transform": "translate(-50%,-50%)", "z-index": "99999", "background": "var(--background-primary)", "border": "1px solid var(--background-modifier-border)", "border-radius": "10px", "padding": "20px", "min-width": "300px", "box-shadow": "0 8px 32px rgba(0,0,0,0.2)" })
+			popup.createEl("h4", { text: isVi ? "Gắn tag" : "Add tag" }).setCssProps({ "margin": "0 0 12px 0" });
 			const inp = popup.createEl("input", { type: "text", placeholder: isVi ? "Nhập tag (không có #)" : "Tag name (no #)" });
-			inp.style.cssText = "width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--background-modifier-border);margin-bottom:10px;";
-			const rowBtns = popup.createDiv(); rowBtns.style.cssText = "display:flex;gap:8px;justify-content:flex-end;";
+			inp.setCssProps({ "width": "100%", "padding": "6px 8px", "border-radius": "6px", "border": "1px solid var(--background-modifier-border)", "margin-bottom": "10px" })
+			const rowBtns = popup.createDiv(); rowBtns.setCssProps({ "display": "flex", "gap": "8px", "justify-content": "flex-end" })
 			const cancelB = rowBtns.createEl("button", { text: isVi ? "Huỷ" : "Cancel" });
 			const confirmB = rowBtns.createEl("button", { text: isVi ? "Gắn" : "Apply" });
-			confirmB.style.cssText = "background:var(--interactive-accent);color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;";
+			confirmB.setCssProps({ "background": "var(--interactive-accent)", "color": "#fff", "border": "none", "padding": "5px 14px", "border-radius": "6px", "cursor": "pointer" })
 			cancelB.onclick = () => popup.remove();
 			confirmB.onclick = async () => {
 				const tag = inp.value.trim().replace(/^#/, "");
 				if (!tag) return;
 				for (const f of selectedFiles) {
-					await (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
+					await void (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
 						if (!fm.tags) fm.tags = [];
 						if (!Array.isArray(fm.tags)) fm.tags = [String(fm.tags)];
 						if (!fm.tags.includes(tag)) fm.tags.push(tag);
 					});
 				}
 				popup.remove();
-				triggerRenderRows();
+				void triggerRenderRows();
 			};
 			inp.focus();
 		};
@@ -458,28 +462,28 @@ export class NavigatorView {
 			if (selectedFiles.length === 0) return;
 
 			const popup = this.container.createDiv();
-			popup.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:var(--background-primary);border:1px solid var(--background-modifier-border);border-radius:10px;padding:20px;min-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2);`;
-			popup.createEl("h4", { text: isVi ? "Gắn properties" : "Add Property" }).style.margin = "0 0 12px 0";
+			popup.setCssProps({ "position": "fixed", "top": "50%", "left": "50%", "transform": "translate(-50%,-50%)", "z-index": "99999", "background": "var(--background-primary)", "border": "1px solid var(--background-modifier-border)", "border-radius": "10px", "padding": "20px", "min-width": "320px", "box-shadow": "0 8px 32px rgba(0,0,0,0.2)" })
+			popup.createEl("h4", { text: isVi ? "Gắn properties" : "Add property" }).setCssProps({ "margin": "0 0 12px 0" });
 			const keyInp = popup.createEl("input", { type: "text", placeholder: isVi ? "Tên thuộc tính (key)" : "Property key" });
-			keyInp.style.cssText = "width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--background-modifier-border);margin-bottom:8px;";
+			keyInp.setCssProps({ "width": "100%", "padding": "6px 8px", "border-radius": "6px", "border": "1px solid var(--background-modifier-border)", "margin-bottom": "8px" })
 			const valInp = popup.createEl("input", { type: "text", placeholder: isVi ? "Giá trị" : "Value" });
-			valInp.style.cssText = "width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--background-modifier-border);margin-bottom:10px;";
-			const rowBtns = popup.createDiv(); rowBtns.style.cssText = "display:flex;gap:8px;justify-content:flex-end;";
+			valInp.setCssProps({ "width": "100%", "padding": "6px 8px", "border-radius": "6px", "border": "1px solid var(--background-modifier-border)", "margin-bottom": "10px" })
+			const rowBtns = popup.createDiv(); rowBtns.setCssProps({ "display": "flex", "gap": "8px", "justify-content": "flex-end" })
 			const cancelB = rowBtns.createEl("button", { text: isVi ? "Huỷ" : "Cancel" });
 			const confirmB = rowBtns.createEl("button", { text: isVi ? "Gắn" : "Apply" });
-			confirmB.style.cssText = "background:var(--interactive-accent);color:#fff;border:none;padding:5px 14px;border-radius:6px;cursor:pointer;";
+			confirmB.setCssProps({ "background": "var(--interactive-accent)", "color": "#fff", "border": "none", "padding": "5px 14px", "border-radius": "6px", "cursor": "pointer" })
 			cancelB.onclick = () => popup.remove();
 			confirmB.onclick = async () => {
 				const key = keyInp.value.trim();
 				const val = valInp.value.trim();
 				if (!key) return;
 				for (const f of selectedFiles) {
-					await (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
+					await void (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
 						fm[key] = val;
 					});
 				}
 				popup.remove();
-				triggerRenderRows();
+				void triggerRenderRows();
 			};
 			keyInp.focus();
 		};
@@ -494,7 +498,7 @@ export class NavigatorView {
 			popup.createEl("h4", { text: isVi ? "Di chuyển file" : "Move files", cls: "flow-popup-h4" });
 
 			const allFolders: string[] = [];
-			interface FolderLike { children?: { path: string; children?: unknown }[] }
+			interface FolderLike { children?: { path: string; children?: any }[] }
 			const collectFolders = (folder: FolderLike) => {
 				for (const child of folder.children || []) {
 					if (child.children !== undefined) {
@@ -507,7 +511,7 @@ export class NavigatorView {
 			allFolders.unshift("/");
 
 			const sel = popup.createEl("select");
-			sel.style.cssText = "width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--background-modifier-border);margin-bottom:10px;";
+			sel.setCssProps({ "width": "100%", "padding": "6px 8px", "border-radius": "6px", "border": "1px solid var(--background-modifier-border)", "margin-bottom": "10px" })
 			for (const folder of allFolders) {
 				sel.createEl("option", { text: folder === "/" ? "/ (root)" : folder, value: folder });
 			}
@@ -526,7 +530,7 @@ export class NavigatorView {
 				popup.remove();
 				this.navigatorSelectedFiles.clear();
 				updateQABar();
-				triggerRenderRows();
+				void triggerRenderRows();
 			};
 		};
 
@@ -551,7 +555,7 @@ export class NavigatorView {
 				popup.remove();
 				this.navigatorSelectedFiles.clear();
 				updateQABar();
-				this.render(this.stats);
+				void this.render(this.stats);
 			};
 		};
 
@@ -598,9 +602,9 @@ export class NavigatorView {
 				th.addClass("flow-dashboard-ui-49");
 
 				if (h === "☑") {
-					selectAllCb = th.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+					selectAllCb = th.createEl("input", { type: "checkbox" });
 					selectAllCb.title = isVi ? "Chọn tất cả" : "Select all";
-					selectAllCb.style.cursor = "pointer";
+					selectAllCb.setCssProps({ "cursor": "pointer" })
 				} else {
 					th.setText(h);
 					if (this.navigatorSortCol === colIdx) {
@@ -886,130 +890,130 @@ export class NavigatorView {
 							pagePaths.forEach(p => this.navigatorSelectedFiles.delete(p));
 						}
 						updateQABar();
-						triggerRenderRows();
+						void triggerRenderRows();
 					};
 				}
 
 				displayFiles.forEach((file, displayIdx) => {
 					const rowIdx = startIdx + displayIdx + 1;
 					const tr = tbody.createEl("tr");
-					tr.style.borderBottom = "1px solid var(--background-modifier-border-hover)";
+					tr.setCssProps({ "border-bottom": "1px solid var(--background-modifier-border-hover)" })
 					const isChecked = this.navigatorSelectedFiles.has(file.path);
-					if (isChecked) tr.style.backgroundColor = "var(--background-modifier-active-hover)";
+					if (isChecked) tr.setCssProps({ "background-color": "var(--background-modifier-active-hover)" })
 
 					const stripeBg = "rgba(128, 128, 128, 0.08)";
 					if (!isChecked && this.navigatorStripedRows && displayIdx % 2 === 1) {
-						tr.style.backgroundColor = stripeBg;
+						tr.setCssProps({ "background-color": stripeBg })
 					}
 
 					tr.onmouseenter = () => {
-						if (!this.navigatorSelectedFiles.has(file.path)) tr.style.backgroundColor = "var(--background-modifier-hover)";
+						if (!this.navigatorSelectedFiles.has(file.path)) tr.setCssProps({ "background-color": "var(--background-modifier-hover)" })
 					};
 					tr.onmouseleave = () => {
 						if (this.navigatorSelectedFiles.has(file.path)) {
-							tr.style.backgroundColor = "var(--background-modifier-active-hover)";
+							tr.setCssProps({ "background-color": "var(--background-modifier-active-hover)" })
 						} else {
-							tr.style.backgroundColor = (this.navigatorStripedRows && displayIdx % 2 === 1) ? stripeBg : "transparent";
+							tr.setCssProps({ "background-color": (this.navigatorStripedRows && displayIdx % 2 === 1) ? stripeBg : "transparent" })
 						}
 					};
 
 					const cache = this.app.metadataCache.getFileCache(file);
 
 					if (isAttachmentMode) {
-						const tdCb = tr.createEl("td"); tdCb.style.padding = "4px 6px";
-						const cb = tdCb.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+						const tdCb = tr.createEl("td"); tdCb.setCssProps({ "padding": "4px 6px" })
+						const cb = tdCb.createEl("input", { type: "checkbox" });
 						cb.checked = this.navigatorSelectedFiles.has(file.path);
 						cb.onchange = () => {
 							if (cb.checked) this.navigatorSelectedFiles.add(file.path);
 							else this.navigatorSelectedFiles.delete(file.path);
 							updateQABar();
-							triggerRenderRows();
+							void triggerRenderRows();
 						};
 
-						const tdIdx = tr.createEl("td"); tdIdx.style.cssText = "padding:6px 8px;color:var(--text-faint);font-size:0.85em;";
+						const tdIdx = tr.createEl("td"); tdIdx.setCssProps({ "padding": "6px 8px", "color": "var(--text-faint)", "font-size": "0.85em" })
 						tdIdx.setText(String(rowIdx));
 
-						const tdName = tr.createEl("td"); tdName.style.padding = "6px 8px";
+						const tdName = tr.createEl("td"); tdName.setCssProps({ "padding": "6px 8px" })
 						tdName.createEl("span", { text: file.basename + "." + file.extension });
 
-						const tdFolder = tr.createEl("td"); tdFolder.style.cssText = "padding:6px 8px;color:var(--text-muted);font-size:0.85em;";
+						const tdFolder = tr.createEl("td"); tdFolder.setCssProps({ "padding": "6px 8px", "color": "var(--text-muted)", "font-size": "0.85em" })
 						tdFolder.setText(file.parent?.path || "/");
 
 						const fileSizeMB = file.stat.size / (1024 * 1024);
 						const sizeText = fileSizeMB >= 1 ? `${fileSizeMB.toFixed(1)} MB` : `${(file.stat.size / 1024).toFixed(0)} KB`;
-						const tdSize = tr.createEl("td"); tdSize.style.cssText = "padding:6px 8px;font-size:0.85em;text-align:right;";
+						const tdSize = tr.createEl("td"); tdSize.setCssProps({ "padding": "6px 8px", "font-size": "0.85em", "text-align": "right" })
 						tdSize.setText(sizeText);
-						if (fileSizeMB > 10) tdSize.style.color = "var(--text-error)";
-						else if (fileSizeMB > 2) tdSize.style.color = "var(--color-orange)";
+						if (fileSizeMB > 10) tdSize.setCssProps({ "color": "var(--text-error)" })
+						else if (fileSizeMB > 2) tdSize.setCssProps({ "color": "var(--color-orange)" })
 
 						const fileType = extTypeMap[file.extension.toLowerCase()] || "other";
-						const tdType = tr.createEl("td"); tdType.style.cssText = "padding:6px 8px;font-size:0.82em;color:var(--text-accent);";
+						const tdType = tr.createEl("td"); tdType.setCssProps({ "padding": "6px 8px", "font-size": "0.82em", "color": "var(--text-accent)" })
 						tdType.setText(file.extension.toLowerCase());
 
 						const incomingForFile = incomingFiles.get(file.path) || [];
 						
-						const tdLinks = tr.createEl("td"); tdLinks.style.cssText = "padding:6px 8px;font-size:0.85em;text-align:center;";
+						const tdLinks = tr.createEl("td"); tdLinks.setCssProps({ "padding": "6px 8px", "font-size": "0.85em", "text-align": "center" })
 						tdLinks.setText(String(incomingForFile.length));
 
-						const tdLinkedFiles = tr.createEl("td"); tdLinkedFiles.style.cssText = "padding:6px 8px;font-size:0.85em;";
+						const tdLinkedFiles = tr.createEl("td"); tdLinkedFiles.setCssProps({ "padding": "6px 8px", "font-size": "0.85em" })
 						if (incomingForFile.length > 0) {
 							const linkContainer = tdLinkedFiles.createDiv();
-							linkContainer.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;";
+							linkContainer.setCssProps({ "display": "flex", "flex-wrap": "wrap", "gap": "4px" })
 							incomingForFile.forEach(srcFile => {
 								const pill = linkContainer.createSpan();
-								pill.style.cssText = "padding:2px 6px;border-radius:4px;background-color:var(--background-modifier-active-hover);color:var(--text-accent);cursor:pointer;font-size:0.9em;";
+								pill.setCssProps({ "padding": "2px 6px", "border-radius": "4px", "background-color": "var(--background-modifier-active-hover)", "color": "var(--text-accent)", "cursor": "pointer", "font-size": "0.9em" })
 								pill.setText(srcFile.basename);
 								pill.title = srcFile.path;
 								pill.onclick = (e) => {
 									e.stopPropagation();
-									this.app.workspace.getLeaf(false).openFile(srcFile);
+									void this.app.workspace.getLeaf(false).openFile(srcFile);
 								};
 							});
 						}
 
-						const tdMod = tr.createEl("td"); tdMod.style.cssText = "padding:6px 8px;color:var(--text-faint);font-size:0.85em;";
+						const tdMod = tr.createEl("td"); tdMod.setCssProps({ "padding": "6px 8px", "color": "var(--text-faint)", "font-size": "0.85em" })
 						tdMod.setText(new Date(file.stat.mtime).toISOString().split("T")[0] || "");
 					} else if (isTagHealthMode || isPropHealthMode) {
-						const tdCb = tr.createEl("td"); tdCb.style.padding = "4px 6px";
-						const cb = tdCb.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+						const tdCb = tr.createEl("td"); tdCb.setCssProps({ "padding": "4px 6px" })
+						const cb = tdCb.createEl("input", { type: "checkbox" });
 						cb.checked = this.navigatorSelectedFiles.has(file.path);
 						cb.onchange = () => {
 							if (cb.checked) this.navigatorSelectedFiles.add(file.path);
 							else this.navigatorSelectedFiles.delete(file.path);
 							updateQABar();
-							triggerRenderRows();
+							void triggerRenderRows();
 						};
 
-						const tdIdx = tr.createEl("td"); tdIdx.style.cssText = "padding:6px 8px;color:var(--text-faint);font-size:0.85em;";
+						const tdIdx = tr.createEl("td"); tdIdx.setCssProps({ "padding": "6px 8px", "color": "var(--text-faint)", "font-size": "0.85em" })
 						tdIdx.setText(String(rowIdx));
 
-						const tdName = tr.createEl("td"); tdName.style.padding = "6px 8px";
+						const tdName = tr.createEl("td"); tdName.setCssProps({ "padding": "6px 8px" })
 						const pill = tdName.createSpan();
-						pill.style.cssText = "padding:2px 8px;border-radius:12px;background-color:var(--background-modifier-active-hover);color:var(--interactive-accent);font-weight:600;font-size:0.85em;";
+						pill.setCssProps({ "padding": "2px 8px", "border-radius": "12px", "background-color": "var(--background-modifier-active-hover)", "color": "var(--interactive-accent)", "font-weight": "600", "font-size": "0.85em" })
 						pill.setText(isTagHealthMode ? `#${file.basename}` : file.basename);
 
-						const tdNote = tr.createEl("td"); tdNote.style.cssText = "padding:6px 8px;font-size:0.85em;";
+						const tdNote = tr.createEl("td"); tdNote.setCssProps({ "padding": "6px 8px", "font-size": "0.85em" })
 						const noteLink = tdNote.createSpan();
-						noteLink.style.cssText = "color:var(--text-accent);cursor:pointer;text-decoration:underline;";
+						noteLink.setCssProps({ "color": "var(--text-accent)", "cursor": "pointer", "text-decoration": "underline" })
 						noteLink.setText(file.file.basename);
 						noteLink.onclick = (e) => {
 							e.stopPropagation();
-							this.app.workspace.getLeaf(false).openFile(file.file);
+							void this.app.workspace.getLeaf(false).openFile(file.file);
 						};
 
 						if (isPropHealthMode) {
-							const tdVals = tr.createEl("td"); tdVals.style.cssText = "padding:6px 8px;font-size:0.85em;color:var(--text-muted);word-break:break-all;";
+							const tdVals = tr.createEl("td"); tdVals.setCssProps({ "padding": "6px 8px", "font-size": "0.85em", "color": "var(--text-muted)", "word-break": "break-all" })
 							tdVals.setText(String(file.values || ""));
 						}
 					} else {
-						const tdCb = tr.createEl("td"); tdCb.style.padding = "4px 6px";
-						const cb = tdCb.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+						const tdCb = tr.createEl("td"); tdCb.setCssProps({ "padding": "4px 6px" })
+						const cb = tdCb.createEl("input", { type: "checkbox" });
 						cb.checked = this.navigatorSelectedFiles.has(file.path);
 						cb.onchange = () => {
 							if (cb.checked) this.navigatorSelectedFiles.add(file.path);
 							else this.navigatorSelectedFiles.delete(file.path);
 							updateQABar();
-							triggerRenderRows();
+							void triggerRenderRows();
 						};
 
 						allColNames.forEach((colName, colIdx) => {
@@ -1025,7 +1029,7 @@ export class NavigatorView {
 							} else if (lowerCol === "name") {
 								const link = td.createEl("a", { text: file.basename });
 								link.addClass("flow-nav-link-cursor");
-								link.onclick = (e) => { e.preventDefault(); this.app.workspace.getLeaf(false).openFile(file); this.closeModal(); };
+								link.onclick = (e) => { e.preventDefault(); void this.app.workspace.getLeaf(false).openFile(file); this.closeModal(); };
 							} else if (lowerCol === "folder") {
 								td.setText(file.parent?.path || "/");
 								td.addClass("flow-nav-td-muted");
@@ -1072,22 +1076,22 @@ export class NavigatorView {
 			searchInput.oninput = (e) => {
 				this.navigatorSearchQuery = (e.target as HTMLInputElement).value;
 				this.navigatorCurrentPage = 1;
-				triggerRenderRows();
+				void triggerRenderRows();
 			};
 
 			prevBtn.onclick = () => {
 				if (this.navigatorCurrentPage > 1) {
 					this.navigatorCurrentPage--;
-					triggerRenderRows();
+					void triggerRenderRows();
 				}
 			};
 
 			nextBtn.onclick = () => {
 				this.navigatorCurrentPage++;
-				triggerRenderRows();
+				void triggerRenderRows();
 			};
 
-			triggerRenderRows();
+			void triggerRenderRows();
 		};
 
 		triggerRenderTable();

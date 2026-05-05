@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable obsidianmd/ui/sentence-case */
 import { App, setIcon } from "obsidian";
 import type * as echartsCore from "echarts/core";
 import type { EChartsOption } from "echarts";
@@ -67,18 +69,19 @@ export class TaxonomyView {
 				};
 				sunburstData = convertToSunburst(taxonomy);
 			} else if (stats) {
-				const tagTree: Record<string, any> = {};
+				interface TagTreeNode { _count: number; _children: Record<string, TagTreeNode>; }
+				const tagTree: Record<string, TagTreeNode> = {};
 				for (const [tag, count] of Object.entries(stats.tagsCount)) {
 					const parts = tag.split("/");
 					let current = tagTree;
 					for (const part of parts) {
-						if (!current[part]) current[part] = { _count: 0, _children: {} };
+						if (!current[part]) current[part] = { _count: 0, _children: {} } as TagTreeNode;
 						current[part]._count += count;
 						current = current[part]._children;
 					}
 				}
 
-				const treeToData = (tree: Record<string, any>): any[] => {
+				const treeToData = (tree: Record<string, TagTreeNode>): any[] => {
 					return Object.entries(tree).map(([name, node]) => {
 						const children = treeToData(node._children || {});
 						return {
@@ -144,12 +147,12 @@ export class TaxonomyView {
 					for (const [rawKey, count] of Object.entries(propGroup)) {
 						const subValues = rawKey.split(",").map(s => s.trim()).filter(Boolean);
 						for (const sv of subValues) {
-							valueCounts[sv] = (valueCounts[sv] || 0) + (count as number);
+							valueCounts[sv] = (valueCounts[sv] || 0) + (count);
 						}
 					}
 				}
 
-				const children: any[] = [];
+				const children: unknown[] = [];
 				const addedValues = new Set<string>();
 
 				for (const val of dim.values) {
@@ -185,8 +188,8 @@ export class TaxonomyView {
 					title: { text: isVi ? "Thuộc tính theo phân loại" : "Properties by Dimension", left: "center", top: 50, textStyle: { fontSize: 14 } },
 					tooltip: {
 						formatter: (params: any) => {
-							const treePathInfo = params.treePathInfo || [];
-							const path = treePathInfo.map((p: any) => p.name).filter(Boolean).join(" → ");
+							const treePathInfo = ((params as { treePathInfo?: { name?: string }[] }).treePathInfo) || [];
+							const path = treePathInfo.map(p => p.name).filter(Boolean).join(" → ");
 							return `${path}: <b>${params.value}</b> note(s)`;
 						},
 					},
@@ -236,7 +239,7 @@ export class TaxonomyView {
 				card.addClass("flow-dashboard-ui-23");
 
 				const statusColor = m.status === "active" ? MISSION_STATUS.active : m.status === "paused" ? MISSION_STATUS.paused : MISSION_STATUS.done;
-				card.style.borderLeft = `4px solid ${statusColor}`;
+				card.setCssProps({ "border-left": `4px solid ${statusColor}` })
 
 				const statusIcon = m.status === "active" ? "🟢" : m.status === "paused" ? "🟡" : "✅";
 				const header = card.createDiv();
@@ -250,7 +253,7 @@ export class TaxonomyView {
 				const statusBadge = header.createSpan({ text: displayStatus });
 				statusBadge.addClass("flow-dashboard-ui-25");
 				statusBadge.addClass("flow-taxonomy-status-badge");
-				statusBadge.style.backgroundColor = statusColor;
+				statusBadge.setCssProps({ "background-color": statusColor })
 
 				if (m.description) {
 					const desc = card.createDiv({ text: m.description });

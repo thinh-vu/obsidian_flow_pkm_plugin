@@ -19,11 +19,21 @@ By providing interactive dashboards, health tracking capabilities, and visual pr
 
 ![FLOW Dashboard](docs/attachements/obsidian_flow_pkm_dashboard.png)
 
-- **Vault Health Monitoring**: Keep your vault in top shape. Automatically track and evaluate key health metrics such as metadata coverage, file staleness, orphan attachments, subfolder depth, and naming conventions.
+- **Centralized Task Management**: Focus on what matters today. Use the minimalist Task Sidebar to quickly add and track tasks without breaking your flow. Switch between List and Kanban views, utilize multi-select filters, and easily identify priorities (P1 to P4) using the Eisenhower Matrix.
+
+- **Vault Health Monitoring & Background Reminders**: Keep your vault in top shape. Automatically track and evaluate key health metrics (metadata coverage, file staleness, orphan attachments, subfolder depth). Set up background reminders via your OS Notification Center to maintain your PKM habits effortlessly.
 
 ![Reminders Settings](docs/attachements/obsidian_flow_reminders_settings.png)
 
 ![Health Check](docs/attachements/obsidian_flow_vault_health_setting.png)
+
+- **Taxonomy & Metadata Suggestions**: Organize notes effectively. Define your own Taxonomy Hierarchy and use the built-in Tag Suggestion menu. Utilize tools like the Emotion Wheel for mood tracking and manage file dimensions for maximum utility without the friction.
+
+![General Settings](docs/attachements/obsidian_flow_folders_settings.png)
+
+![Taxonomy Management](docs/attachements/obsidian_flow_taxonomy_management.png)
+
+- **Automated Table of Contents (Auto TOC)**: Transform flat folders into organized libraries. Automatically generate and update `_TOC.md` files for your core folders, complete with embedded Dataview tables for a data-driven overview of your notes.
 
 - **Activity Tracking**: Monitor your note-taking activity natively within Obsidian, helping you stay consistent with your knowledge-building habits.
 
@@ -34,12 +44,6 @@ By providing interactive dashboards, health tracking capabilities, and visual pr
 - **Flexible Settings Management**: Backup your configurations or synchronize your personalized FLOW setup across multiple devices easily via Import & Export.
 
 ![FLOW Navigator](docs/attachements/obsidian_flow_dashboard_navigator.png)
-
-- **Taxonomy & Metadata Management**: Organize notes effectively. Utilize built-in tools like the Eisenhower Matrix (Urgency/Impact) and the Emotion Wheel for property suggestions, ensuring your notes are categorized for maximum utility without the friction.
-
-![General Settings](docs/attachements/obsidian_flow_folders_settings.png)
-
-![Taxonomy Management](docs/attachements/obsidian_flow_taxonomy_management.png)
 
 
 
@@ -75,9 +79,11 @@ Obsidian FLOW PKM là một plugin quản lý không gian làm việc toàn di�
 Bằng cách cung cấp các bảng điều khiển (dashboard) trực quan, theo dõi sức khoẻ của vault, và biểu đồ tiến trình, plugin giúp bạn duy trì một hệ thống ghi chú sắc bén và hiệu quả cho dù bạn là sinh viên, người đi làm hay nhà sáng tạo nội dung đang muốn tối ưu hoá hiệu suất công việc.
 
 ### Tính năng & Chức năng cốt lõi
-- **Bảng điều khiển FLOW & Trực quan hoá tiến trình**: Cung cấp cái nhìn toàn cảnh về kho tri thức của bạn. Trực quan hoá vòng đời ghi chú và tiến trình áp dụng phương pháp luận với giao diện dạng mạng lưới phân nhánh dễ hiểu. Theo dõi tiến độ mỗi ngày.
-- **Theo dõi "Sức khoẻ" Vault (Vault Health)**: Giữ cho kho lưu trữ của bạn luôn gọn gàng và chuẩn mực. Tự động theo dõi các chỉ số quan trọng như mức độ hoàn thiện siêu dữ liệu (metadata), các ghi chú đã cũ (stale files), tệp đính kèm mồ côi (orphan attachments), giới hạn độ sâu của thư mục, và quy ước đặt tên.
-- **Quản lý phân loại & Siêu dữ liệu (Taxonomy)**: Hệ thống hoá ghi chú một cách thiết thực. Sử dụng các công cụ tích hợp như Ma trận Eisenhower (Mức độ khẩn cấp/Quan trọng) và Vòng tròn cảm xúc (Emotion Wheel) để gợi ý thuộc tính, đảm bảo mọi ghi chú đều được phân loại tối ưu mà không gây quá tải.
+- **Bảng điều khiển FLOW & Trực quan hoá tiến trình**: Cung cấp cái nhìn toàn cảnh về kho tri thức của bạn. Trực quan hoá vòng đời ghi chú và tiến trình áp dụng phương pháp luận với giao diện mạng lưới phân nhánh dễ hiểu.
+- **Quản trị Nhiệm vụ Tập trung (Task Management)**: Quản lý công việc hiệu quả với giao diện tối giản, tập trung vào hôm nay. Hỗ trợ Task Sidebar để thêm nhanh (Quick Add) công việc, chuyển đổi giữa chế độ List và Kanban, bộ lọc đa luồng và tự động phân loại mức độ ưu tiên (P1-P4) theo ma trận Eisenhower.
+- **Giám sát Sức khoẻ Vault & Nhắc nhở Chủ động (Reminders)**: Tự động đánh giá "sức khoẻ" của hệ thống qua các chỉ số như ghi chú cũ (stale files), tệp đính kèm mồ côi hay thiếu metadata. Nhận thông báo nhắc nhở dọn dẹp định kỳ ngay trên hệ điều hành (Background OS Notifications) để duy trì thói quen PKM.
+- **Phân loại Thông minh & Gợi ý (Taxonomy)**: Hệ thống hoá kiến trúc thông tin từ dưới lên. Tự định nghĩa cấu trúc thẻ, tận dụng menu gợi ý thẻ thông minh và theo dõi cảm xúc (Mood Tracking) với Bánh xe cảm xúc.
+- **Mục lục Tự động (Auto TOC)**: Tự động tạo và cập nhật các tệp `_TOC.md` cho các thư mục lõi. Tích hợp sức mạnh của Dataview để hiển thị dữ liệu thư mục dưới dạng bảng trực quan, thay thế cho danh sách file truyền thống.
 - **Theo dõi hoạt động**: Nắm bắt tần suất và hiệu quả tạo ghi chú ngay bên trong Obsidian, giúp bạn duy trì thói quen xây dựng tri thức.
 - **Quản lý Cài đặt linh hoạt**: Dễ dàng sao lưu (Export) và đồng bộ (Import) thiết lập FLOW cá nhân hoá của bạn sang các thiết bị khác.
 

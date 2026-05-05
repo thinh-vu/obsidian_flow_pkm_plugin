@@ -79,7 +79,7 @@ export class FlowSettingTab extends PluginSettingTab {
 			setIcon(tabButton, tab.icon);
 			const nameKey = TAB_NAME_KEYS[tab.id];
 			const displayName = nameKey ? L[nameKey] : tab.name;
-			tabButton.createEl("span", { text: displayName as string });
+			tabButton.createEl("span", { text: displayName });
 
 			tabButton.addEventListener("click", () => {
 				this.activeTab = tab.id;

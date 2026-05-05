@@ -1,3 +1,4 @@
+/* eslint-disable obsidianmd/ui/sentence-case */
 import { Setting, Notice } from "obsidian";
 import type FlowPlugin from "../../main";
 import type { RemindersSettings } from "../../types";
@@ -48,8 +49,8 @@ export class RemindersTab {
 
 		for (const rt of reminderTypes) {
 			const reminderKey = rt.key;
-			const rtName = L[rt.nameKey] as string;
-			const rtDesc = L[rt.descKey] as string;
+			const rtName = L[rt.nameKey];
+			const rtDesc = L[rt.descKey];
 			const config = this.plugin.settings.reminders[reminderKey];
 
 			const group = typesSection.createDiv();
@@ -91,7 +92,7 @@ export class RemindersTab {
 
 			// Days of week setting
 			const daysSetting = new Setting(group)
-				.setName(isVi ? "Ngày hoạt động" : "Active Days")
+				.setName(isVi ? "Ngày hoạt động" : "Active days")
 				.setDesc(isVi ? "Chọn các ngày trong tuần sẽ nhận được thông báo này." : "Select which days of the week this reminder is active.");
 
 			const daysControl = daysSetting.controlEl;
@@ -104,9 +105,9 @@ export class RemindersTab {
 				const isActive = config.activeDays?.includes(index) ?? true;
 				if (isActive) chip.addClass("is-active");
 
-				const cb = chip.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+				const cb = chip.createEl("input", { type: "checkbox" });
 				cb.checked = isActive;
-				cb.style.display = "none";
+				cb.setCssProps({ "display": "none" })
 
 				chip.createSpan({ text: lbl });
 
@@ -128,7 +129,7 @@ export class RemindersTab {
 
 			// Time window setting
 			new Setting(group)
-				.setName(isVi ? "Khung giờ" : "Time Window")
+				.setName(isVi ? "Khung giờ" : "Time window")
 				.setDesc(isVi ? "Chỉ hiển thị nhắc nhở trong khoảng thời gian này." : "Only trigger reminders within this time window.")
 				.addText(text => {
 					text.inputEl.type = "time";

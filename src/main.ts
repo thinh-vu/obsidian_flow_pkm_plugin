@@ -1,3 +1,4 @@
+/* eslint-disable obsidianmd/ui/sentence-case */
 /**
  * Obsidian FLOW Plugin — Main entry point.
  *
@@ -8,7 +9,7 @@
  * to avoid bundling ~1MB of chart code into the startup path.
  */
 
-import { Notice, Plugin, TFolder } from "obsidian";
+import { Notice, Plugin, TFolder, TFile, setIcon, App } from "obsidian";
 import type { EventRef } from "obsidian";
 import { FlowPluginSettings } from "./types";
 import { DEFAULT_SETTINGS, detectCurrentPreset } from "./constants";
@@ -16,6 +17,8 @@ import { FlowSettingTab } from "./settings";
 import { installFlowSort } from "./core/folder-sorter";
 import { TagTaxonomySuggest } from "./features/taxonomy/tag-suggest";
 import { NotificationWorker } from "./features/reminders/worker";
+import { TaskSidebarView } from "./features/dashboard/views/task-sidebar-view";
+import { VIEW_TYPE_TASK_SIDEBAR } from "./constants";
 
 export default class FlowPlugin extends Plugin {
 	settings: FlowPluginSettings = DEFAULT_SETTINGS;
@@ -23,6 +26,9 @@ export default class FlowPlugin extends Plugin {
 	private sortUninstall: (() => void) | undefined;
 	private ribbonIconEl: HTMLElement | undefined;
 	private tocEventRefs: EventRef[] = [];
+	
+	isUiRevealed: boolean = false;
+	private uiToggleStatusBarItem: HTMLElement | undefined;
 
 	async onload() {
 		await this.loadSettings();
@@ -31,7 +37,7 @@ export default class FlowPlugin extends Plugin {
 		if (this.settings.showRibbonIcon) {
 			this.ribbonIconEl = this.addRibbonIcon(
 				"waves",
-				"FLOW Dashboard",
+				"FLOW dashboard",
 				async () => {
 					const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 					new DashboardModal(this.app, this.settings).open();
@@ -39,6 +45,14 @@ export default class FlowPlugin extends Plugin {
 			);
 		}
 
+		this.uiToggleStatusBarItem = this.addStatusBarItem();
+		this.uiToggleStatusBarItem.addClass("flow-ui-toggle-status");
+		this.uiToggleStatusBarItem.onClickEvent(() => {
+			this.isUiRevealed = !this.isUiRevealed;
+			this.applyUiState();
+		});
+		this.updateUiToggleStatusBar();
+		
 		// ── Commands ─────────────────────────────────────────
 		this.addCommand({
 			id: "flow-create-folders",
@@ -57,7 +71,7 @@ export default class FlowPlugin extends Plugin {
 
 		this.addCommand({
 			id: "flow-open-dashboard",
-			name: "Open FLOW Dashboard",
+			name: "Open FLOW dashboard",
 			callback: async () => {
 				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 				new DashboardModal(this.app, this.settings).open();
@@ -65,8 +79,17 @@ export default class FlowPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: "flow-open-dashboard-tasks",
+			name: "Open FLOW dashboard (tasks)",
+			callback: async () => {
+				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
+				new DashboardModal(this.app, this.settings, "tasks").open();
+			},
+		});
+
+		this.addCommand({
 			id: "flow-open-dashboard-stats",
-			name: "Open FLOW Dashboard (Statistics)",
+			name: "Open FLOW dashboard (statistics)",
 			callback: async () => {
 				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 				new DashboardModal(this.app, this.settings, "statistics").open();
@@ -75,7 +98,7 @@ export default class FlowPlugin extends Plugin {
 
 		this.addCommand({
 			id: "flow-open-dashboard-navigator",
-			name: "Open FLOW Dashboard (Navigator)",
+			name: "Open FLOW dashboard (navigator)",
 			callback: async () => {
 				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 				new DashboardModal(this.app, this.settings, "navigator").open();
@@ -89,7 +112,28 @@ export default class FlowPlugin extends Plugin {
 				await this.autoDetectPresetIfNeeded(true);
 			},
 		});
+		this.addCommand({
+			id: "flow-open-task-sidebar",
+			name: "Open FLOW task sidebar",
+			callback: async () => {
+				await this.activateTaskSidebar();
+			},
+		});
 
+		this.addCommand({
+			id: "flow-toggle-ui",
+			name: "Toggle zen mode",
+			callback: () => {
+				this.isUiRevealed = !this.isUiRevealed;
+				this.applyUiState();
+			},
+		});
+
+		// ── Register Views ────────────────────────────────────
+		this.registerView(
+			VIEW_TYPE_TASK_SIDEBAR,
+			(leaf) => new TaskSidebarView(leaf, this.settings)
+		);
 		// ── Settings tab ─────────────────────────────────────
 		this.addSettingTab(new FlowSettingTab(this.app, this));
 
@@ -98,6 +142,8 @@ export default class FlowPlugin extends Plugin {
 
 		// ── Lifecycle: after layout ready ────────────────────
 		this.app.workspace.onLayoutReady(async () => {
+			this.applyUiState();
+			
 			// Auto-detect vault preset on first run (deferred to avoid blocking startup)
 			await this.autoDetectPresetIfNeeded();
 
@@ -132,7 +178,106 @@ export default class FlowPlugin extends Plugin {
 
 			// NOTE: TOC watcher (Phase 4) — not yet implemented.
 			// Empty event handlers were removed to avoid startup overhead.
+
+			// Execute Startup Action
+			const action = this.settings.startupAction;
+			if (action.startsWith("dashboard")) {
+				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
+				if (action === "dashboard") {
+					new DashboardModal(this.app, this.settings).open();
+				} else if (action === "dashboard-navigator") {
+					new DashboardModal(this.app, this.settings, "navigator").open();
+				} else if (action === "dashboard-tasks") {
+					new DashboardModal(this.app, this.settings, "tasks").open();
+				} else if (action === "dashboard-statistics") {
+					new DashboardModal(this.app, this.settings, "statistics").open();
+				}
+			} else if (action === "graph") {
+				// Internal obsidian command to open graph view
+				(this.app as App & { commands?: { executeCommandById: (id: string) => void } }).commands?.executeCommandById("graph:open");
+			} else if (action === "file" && this.settings.startupFilePath) {
+				const file = this.app.vault.getAbstractFileByPath(this.settings.startupFilePath);
+				if (file instanceof TFile) {
+					await this.app.workspace.getLeaf(false).openFile(file);
+				}
+			}
 		});
+	}
+
+	applyUiState() {
+		const body = document.body;
+		const level = this.settings.zenModeLevel;
+
+		if (level === 0) {
+			// Disable Zen mode entirely
+			body.classList.remove("flow-zen-active", "flow-zen-level-1", "flow-zen-level-2", "flow-zen-fallback");
+			if (this.uiToggleStatusBarItem) this.uiToggleStatusBarItem.hide();
+			return;
+		}
+
+		if (this.uiToggleStatusBarItem) this.uiToggleStatusBarItem.show();
+
+		const borderismClasses = [
+			"Ribbon-autohide", 
+			"tab-autohide", 
+			"nav-header-autohide", 
+			"tab-title-bar-autohide", 
+			"vault-profile-autohide"
+		];
+		
+		const activeTheme = (this.app as App & { customCss?: { theme?: string } }).customCss?.theme || "";
+		const isBorderism = activeTheme === "Borderism";
+
+		if (this.isUiRevealed) {
+			// Show UI
+			body.classList.remove("flow-zen-active", "flow-zen-level-1", "flow-zen-level-2", "flow-zen-fallback");
+
+			if (isBorderism) {
+				borderismClasses.forEach(cls => body.classList.remove(cls));
+			}
+
+			// Expand sidebars
+			const { workspace } = this.app;
+			if (workspace.leftSplit) workspace.leftSplit.expand();
+			if (workspace.rightSplit) workspace.rightSplit.expand();
+		} else {
+			// Hide UI (Zen mode)
+			body.classList.add("flow-zen-active", `flow-zen-level-${level}`);
+			body.classList.remove(`flow-zen-level-${level === 1 ? 2 : 1}`);
+
+			if (isBorderism) {
+				borderismClasses.forEach(cls => body.classList.add(cls));
+			} else {
+				body.classList.add("flow-zen-fallback");
+			}
+
+			// If level 2, collapse sidebars
+			if (level === 2) {
+				const { workspace } = this.app;
+				if (workspace.leftSplit) workspace.leftSplit.collapse();
+				if (workspace.rightSplit) workspace.rightSplit.collapse();
+			}
+		}
+
+		this.updateUiToggleStatusBar();
+	}
+
+	updateUiToggleStatusBar() {
+		if (!this.uiToggleStatusBarItem) return;
+		
+		this.uiToggleStatusBarItem.empty();
+		
+		if (this.isUiRevealed) {
+			setIcon(this.uiToggleStatusBarItem, "maximize");
+			this.uiToggleStatusBarItem.createSpan({ text: " UI" });
+			this.uiToggleStatusBarItem.setCssProps({ "color": "var(--text-muted)" })
+			this.uiToggleStatusBarItem.setCssProps({ "font-weight": "normal" })
+		} else {
+			setIcon(this.uiToggleStatusBarItem, "minimize");
+			this.uiToggleStatusBarItem.createSpan({ text: " Zen" });
+			this.uiToggleStatusBarItem.setCssProps({ "color": "var(--text-accent)" })
+			this.uiToggleStatusBarItem.setCssProps({ "font-weight": "bold" })
+		}
 	}
 
 	onunload() {
@@ -207,7 +352,7 @@ export default class FlowPlugin extends Plugin {
 	 * @param force If true, always detect and apply (used by command)
 	 */
 	private async autoDetectPresetIfNeeded(force = false) {
-		const savedData = await this.loadData();
+		const savedData = await this.loadData() as Partial<FlowPluginSettings> | null;
 
 		// Only auto-detect on first run (no saved settings) or when forced
 		if (savedData && !force) return;
@@ -232,5 +377,24 @@ export default class FlowPlugin extends Plugin {
 				"FLOW: Could not detect a matching preset from vault folders."
 			);
 		}
+	}
+
+	async activateTaskSidebar() {
+		const { workspace } = this.app;
+
+		let leaf = workspace.getLeavesOfType(VIEW_TYPE_TASK_SIDEBAR)[0];
+
+		if (!leaf) {
+			const rightLeaf = workspace.getRightLeaf(false);
+			if (!rightLeaf) return;
+			leaf = rightLeaf;
+			await leaf.setViewState({
+				type: VIEW_TYPE_TASK_SIDEBAR,
+				active: true,
+			});
+		}
+
+		// @ts-ignore
+		await workspace.revealLeaf(leaf);
 	}
 }

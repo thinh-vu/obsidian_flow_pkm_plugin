@@ -108,7 +108,19 @@ function scoreBlueprint(rs: RoleStats, stats: VaultStats, settings: FlowPluginSe
 
 	const criteria = [c1, c2, c3, c4, c5];
 	const totalScore = clamp(criteria.reduce((a, c) => a + c.score, 0), 0, 100);
-	return { totalScore, level: toLevel(totalScore, 100), criteria };
+	const level = toLevel(totalScore, 100);
+
+	const isVi = settings.language !== "en";
+	let evaluationText = "";
+	if (totalScore >= 71) {
+		evaluationText = isVi ? "Bản thiết kế tuyệt vời. Sứ mệnh được xác định rõ ràng và liên kết tốt với các ghi chú khác." : "Excellent blueprint. Missions are well-defined and highly interlinked.";
+	} else if (totalScore >= 41) {
+		evaluationText = isVi ? "Cơ bản ổn, nhưng cần tăng cường sử dụng Properties và gắn tag cho các sứ mệnh để dễ tìm kiếm." : "Fair structure. Improve by utilizing Properties more and adding tags to missions.";
+	} else {
+		evaluationText = isVi ? "Thiếu định hướng cốt lõi. Hãy tạo thêm các sứ mệnh (Mission) và đảm bảo các ghi chú được liên kết chặt chẽ." : "Lacks core direction. Create more missions and ensure notes are interlinked.";
+	}
+
+	return { totalScore, level, criteria, evaluationText };
 }
 
 // ── CAPTURE ─────────────────────────────────────────────────────────────
@@ -155,7 +167,19 @@ function scoreCapture(rs: RoleStats, stats: VaultStats, settings: FlowPluginSett
 
 	const criteria = [c1, c2, c3, c4, c5];
 	const totalScore = clamp(criteria.reduce((a, c) => a + c.score, 0), 0, 100);
-	return { totalScore, level: toLevel(totalScore, 100), criteria };
+	const level = toLevel(totalScore, 100);
+
+	const isVi = settings.language !== "en";
+	let evaluationText = "";
+	if (totalScore >= 71) {
+		evaluationText = isVi ? "Quá trình thu thập đang hoạt động rất hiệu quả. Ghi chú mới được xử lý nhanh và gắn kết tốt." : "Capture is highly effective. New notes are processed quickly and well-linked.";
+	} else if (totalScore >= 41) {
+		evaluationText = isVi ? "Khá tốt. Hãy chú ý xử lý các ghi chú thô (raw notes) tồn đọng lâu ngày và bổ sung liên kết (Wikilinks)." : "Good. Pay attention to older raw notes and add more Wikilinks.";
+	} else {
+		evaluationText = isVi ? "Nhiều ghi chú thu thập bị bỏ quên hoặc thiếu metadata. Hãy dọn dẹp ghi chú thô và phân loại kịp thời." : "Many captured notes are neglected or lack metadata. Process raw notes and classify them promptly.";
+	}
+
+	return { totalScore, level, criteria, evaluationText };
 }
 
 // ── TRACK ───────────────────────────────────────────────────────────────
@@ -202,7 +226,19 @@ function scoreTrack(rs: RoleStats, stats: VaultStats, settings: FlowPluginSettin
 
 	const criteria = [c1, c2, c3, c4, c5, c6];
 	const totalScore = clamp(criteria.reduce((a, c) => a + c.score, 0), 0, 100);
-	return { totalScore, level: toLevel(totalScore, 100), criteria };
+	const level = toLevel(totalScore, 100);
+
+	const isVi = settings.language !== "en";
+	let evaluationText = "";
+	if (totalScore >= 71) {
+		evaluationText = isVi ? "Theo dõi cực tốt! Bạn duy trì thói quen ghi chú đều đặn và giải quyết công việc tồn đọng rất hiệu quả." : "Excellent tracking! You maintain a consistent logging habit and resolve pending tasks efficiently.";
+	} else if (totalScore >= 41) {
+		evaluationText = isVi ? "Tốt, nhưng lượng task tồn đọng bắt đầu tích tụ. Hãy rà soát lại tiến trình và dọn dẹp task cũ." : "Good, but pending tasks are accumulating. Review your progress and clear old tasks.";
+	} else {
+		evaluationText = isVi ? "Tần suất theo dõi thấp và nhiều việc tồn đọng. Cần tạo thói quen ghi log hàng ngày và xử lý dứt điểm task." : "Low tracking frequency and high backlog. Build a daily logging habit and clear pending tasks.";
+	}
+
+	return { totalScore, level, criteria, evaluationText };
 }
 
 // ── FORGE ───────────────────────────────────────────────────────────────
@@ -245,7 +281,19 @@ function scoreForge(rs: RoleStats, stats: VaultStats, settings: FlowPluginSettin
 
 	const criteria = [c1, c2, c3, c4, c5];
 	const totalScore = clamp(criteria.reduce((a, c) => a + c.score, 0), 0, 100);
-	return { totalScore, level: toLevel(totalScore, 100), criteria };
+	const level = toLevel(totalScore, 100);
+
+	const isVi = settings.language !== "en";
+	let evaluationText = "";
+	if (totalScore >= 71) {
+		evaluationText = isVi ? "Tiến trình Rèn giũa rất sôi nổi. Các dự án đang được phát triển liên tục và không bị đình trệ." : "Forge process is highly active. Projects are continuously developed without stagnation.";
+	} else if (totalScore >= 41) {
+		evaluationText = isVi ? "Có sự phát triển, nhưng một số dự án đang bị 'ngủ đông'. Hãy tập trung hoàn thiện các bản nháp đang dang dở." : "Progress exists, but some projects are dormant. Focus on completing WIP drafts.";
+	} else {
+		evaluationText = isVi ? "Rất nhiều nội dung đang đình trệ hoặc thiếu metadata. Cần kích hoạt lại các dự án hoặc đưa vào Lưu trữ." : "Many contents are stagnant or lack metadata. Reactivate projects or move them to Vault.";
+	}
+
+	return { totalScore, level, criteria, evaluationText };
 }
 
 // ── EXHIBIT ─────────────────────────────────────────────────────────────
@@ -290,7 +338,19 @@ function scoreExhibit(rs: RoleStats, stats: VaultStats, settings: FlowPluginSett
 
 	const criteria = [c1, c2, c3, c4, c5];
 	const totalScore = clamp(criteria.reduce((a, c) => a + c.score, 0), 0, 100);
-	return { totalScore, level: toLevel(totalScore, 100), criteria };
+	const level = toLevel(totalScore, 100);
+
+	const isVi = settings.language !== "en";
+	let evaluationText = "";
+	if (totalScore >= 71) {
+		evaluationText = isVi ? "Nội dung trưng bày chất lượng cao! Đa dạng tag và hệ thống Properties được chuẩn hoá tốt." : "High-quality exhibit content! Diverse tags and well-standardized Properties system.";
+	} else if (totalScore >= 41) {
+		evaluationText = isVi ? "Nội dung ổn nhưng cấu trúc thư mục chưa cân bằng. Hãy chú ý gom nhóm và phân bổ nội dung hợp lý hơn." : "Content is fine but folder structure is unbalanced. Group and distribute content better.";
+	} else {
+		evaluationText = isVi ? "Kho trưng bày đang thiếu hụt sự tổ chức. Hãy bắt đầu gán tag, Properties rõ ràng và chia thư mục." : "Exhibit lacks organization. Start assigning clear tags, Properties, and organize folders.";
+	}
+
+	return { totalScore, level, criteria, evaluationText };
 }
 
 // ── VAULT ───────────────────────────────────────────────────────────────
@@ -345,8 +405,19 @@ function scoreVault(rs: RoleStats | undefined, stats: VaultStats, settings: Flow
 
 	const criteria = [c1, c2, c3, c4, c5];
 	const totalScore = clamp(criteria.reduce((a, c) => a + c.score, 0), 0, 100);
+	const level = toLevel(totalScore, 100);
 
-	return { totalScore, level: toLevel(totalScore, 100), criteria };
+	const isVi = settings.language !== "en";
+	let evaluationText = "";
+	if (totalScore >= 71) {
+		evaluationText = isVi ? "Kho lưu trữ gọn gàng, quy tắc đặt tên thống nhất và tệp mồ côi được kiểm soát cực tốt." : "Vault is tidy, naming conventions are consistent, and orphaned files are well controlled.";
+	} else if (totalScore >= 41) {
+		evaluationText = isVi ? "Lưu trữ tương đối ổn định. Nên dọn bớt các tệp đính kèm mồ côi (không sử dụng) để tiết kiệm dung lượng." : "Storage is relatively stable. Consider cleaning up orphaned attachments to save space.";
+	} else {
+		evaluationText = isVi ? "Kho lưu trữ lộn xộn. Đang có quá nhiều tệp lớn, tệp mồ côi và thiếu sự nhất quán trong cách đặt tên." : "Vault is cluttered. Too many large files, orphaned files, and inconsistent naming.";
+	}
+
+	return { totalScore, level, criteria, evaluationText };
 }
 
 // ── Public API ──────────────────────────────────────────────────────────

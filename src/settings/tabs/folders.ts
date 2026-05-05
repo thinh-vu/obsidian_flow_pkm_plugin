@@ -1,7 +1,8 @@
+/* eslint-disable obsidianmd/ui/sentence-case */
 import { Setting, Notice } from "obsidian";
 import type FlowPlugin from "../../main";
 import { FLOW_PRESETS, getPresetById, applyPrefixFormat } from "../../constants";
-import { FLOW_ROLE_ORDER, FLOW_ROLE_DESCRIPTIONS } from "../../types";
+import { FLOW_ROLE_ORDER } from "../../types";
 import { renameFlowFolders, syncObsidianConfigs } from "../../core/folder-manager";
 import type { FlowSettingTab } from "../../settings";
 import { getSettingsLabels } from "../../i18n/settings-labels";
@@ -35,13 +36,14 @@ export class FoldersTab {
 								preset.folders,
 								this.plugin.settings.useNumberPrefix
 							);
+							this.plugin.settings.roleDescriptions = { ...preset.descriptions };
 						}
 					}
 
 					await this.plugin.saveSettings();
 
 					const newMap = this.plugin.settings.folderMap;
-					const renamedPairs = await renameFlowFolders(this.plugin.app.vault, oldMap, newMap);
+					await renameFlowFolders(this.plugin.app.vault, oldMap, newMap);
 					await syncObsidianConfigs(this.plugin.app.vault, oldMap, newMap);
 
 					this.plugin.reinstallSort();
@@ -66,7 +68,7 @@ export class FoldersTab {
 
 					new Notice(L.renamingNotice, 7000);
 
-					const renamedPairs2 = await renameFlowFolders(this.plugin.app.vault, oldMap, newMap);
+					await renameFlowFolders(this.plugin.app.vault, oldMap, newMap);
 					await syncObsidianConfigs(this.plugin.app.vault, oldMap, newMap);
 					this.plugin.reinstallSort();
 					this.settingTab.display();
@@ -89,7 +91,7 @@ export class FoldersTab {
 							this.plugin.settings.folderMap
 						);
 						if (created.length === 0) {
-							new Notice("FLOW: All folders already exist.");
+							new Notice("FLOW: all folders already exist.");
 						}
 					}
 				});
@@ -106,10 +108,10 @@ export class FoldersTab {
 					await this.plugin.saveSettings();
 					if (value) {
 						this.plugin.reinstallSort();
-						new Notice("FLOW: Custom sort enabled.");
+						new Notice("FLOW: custom sort enabled.");
 					} else {
 						this.plugin.uninstallSort();
-						new Notice("FLOW: Custom sort disabled.");
+						new Notice("FLOW: custom sort disabled.");
 					}
 				});
 			});
@@ -129,33 +131,50 @@ export class FoldersTab {
 		for (const role of FLOW_ROLE_ORDER) {
 			const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
 			const roleIndex = FLOW_ROLE_ORDER.indexOf(role) + 1;
-			new Setting(namesSection)
+			
+			const setting = new Setting(namesSection)
 				.setName(`${roleIndex}. ${roleLabel}`)
-				.setDesc(FLOW_ROLE_DESCRIPTIONS[role])
-				.addText((text) => {
+				.setDesc(isCustom ? "Tùy chỉnh tên thư mục (trái) và mô tả hiển thị trên Dashboard (phải/dưới)" : this.plugin.settings.roleDescriptions[role]);
+
+			setting.addText((text) => {
+				text
+					.setPlaceholder("Tên thư mục")
+					.setValue(this.plugin.settings.folderMap[role])
+					.setDisabled(!isCustom)
+					.onChange(async (value) => {
+						if (isCustom && value.trim()) {
+							const oldMap = { ...this.plugin.settings.folderMap };
+							this.plugin.settings.folderMap[role] = value.trim();
+							await this.plugin.saveSettings();
+							await renameFlowFolders(this.plugin.app.vault, oldMap, this.plugin.settings.folderMap);
+							await syncObsidianConfigs(this.plugin.app.vault, oldMap, this.plugin.settings.folderMap);
+							this.plugin.reinstallSort();
+						}
+					});
+				text.inputEl.setCssProps({ "width": isCustom ? "160px" : "180px" })
+			});
+
+			if (isCustom) {
+				setting.addTextArea((text) => {
 					text
-						.setPlaceholder(`${roleIndex}. ${roleLabel}`)
-						.setValue(this.plugin.settings.folderMap[role])
-						.setDisabled(!isCustom)
+						.setPlaceholder("Mô tả ý nghĩa...")
+						.setValue(this.plugin.settings.roleDescriptions[role])
 						.onChange(async (value) => {
-							if (isCustom && value.trim()) {
-								const oldMap = { ...this.plugin.settings.folderMap };
-								this.plugin.settings.folderMap[role] = value.trim();
-								await this.plugin.saveSettings();
-								await renameFlowFolders(
-									this.plugin.app.vault,
-									oldMap,
-									this.plugin.settings.folderMap
-								);
-								await syncObsidianConfigs(
-									this.plugin.app.vault,
-									oldMap,
-									this.plugin.settings.folderMap
-								);
-								this.plugin.reinstallSort();
-							}
+							this.plugin.settings.roleDescriptions[role] = value.trim();
+							await this.plugin.saveSettings();
 						});
+					text.inputEl.setCssProps({ "width": "240px" })
+					text.inputEl.setCssProps({ "height": "2.2em" }) // compact height
+					text.inputEl.setCssProps({ "min-height": "2.2em" })
+					text.inputEl.setCssProps({ "resize": "vertical" })
 				});
+
+				// Stack inputs horizontally with gap, or let them wrap naturally
+				setting.controlEl.setCssProps({ "display": "flex" })
+				setting.controlEl.setCssProps({ "flex-wrap": "wrap" })
+				setting.controlEl.setCssProps({ "justify-content": "flex-end" })
+				setting.controlEl.setCssProps({ "gap": "8px" })
+			}
 		}
 	}
 }

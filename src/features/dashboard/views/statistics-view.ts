@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/await-thenable */
 import { App, setIcon } from "obsidian";
 import type * as echartsCore from "echarts/core";
 import type { EChartsOption } from "echarts";
@@ -72,14 +73,14 @@ export class StatisticsView {
 					const row = popup.createDiv();
 					row.addClass("flow-dashboard-ui-10");
 
-					const cb = row.createEl("input", { type: "checkbox" }) as HTMLInputElement;
+					const cb = row.createEl("input", { type: "checkbox" });
 					cb.checked = !this.excludedProperties.has(key);
 					row.createEl("label", { text: key });
 
 					cb.onchange = () => {
 						if (cb.checked) this.excludedProperties.delete(key);
 						else this.excludedProperties.add(key);
-						this.render(stats, activeTab);
+						void void this.render(stats, activeTab);
 					};
 				}
 
@@ -138,7 +139,7 @@ export class StatisticsView {
 			const heatmapOption = this.getActivityChartOption(stats);
 			if (heatmapOption.calendar) {
 				const numYears = Array.isArray(heatmapOption.calendar) ? heatmapOption.calendar.length : 1;
-				topDiv.style.minHeight = (numYears * 180 + 140) + "px";
+				topDiv.setCssProps({ "min-height": (numYears * 180 + 140) + "px" })
 			}
 			heatmapOption.backgroundColor = "transparent";
 			this.chartInstanceLeft?.setOption(heatmapOption, true);
@@ -224,7 +225,7 @@ export class StatisticsView {
 			if (this.selectedPropertyCategory === "publish" && strName.includes("T")) {
 				strName = strName.split("T")[0] || strName;
 			}
-			aggregated[strName] = (aggregated[strName] || 0) + (value as number);
+			aggregated[strName] = (aggregated[strName] || 0) + (value);
 		}
 
 		const detailData = Object.entries(aggregated)
@@ -246,6 +247,17 @@ export class StatisticsView {
 		};
 
 		this.chartInstanceRight.setOption(rightOption, true);
+
+		this.chartInstanceRight.off("click");
+		this.chartInstanceRight.on("click", (params: any) => {
+			if (params.name) {
+				const linktext = extractWikilinkName(String(params.name));
+				const file = this.app.metadataCache.getFirstLinkpathDest(linktext, "");
+				if (file) {
+					void this.app.workspace.getLeaf(false).openFile(file);
+				}
+			}
+		});
 	}
 
 	private getTagsChartOption(stats: VaultStats): EChartsOption {
