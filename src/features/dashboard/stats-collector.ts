@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
 /**
  * FLOW Vault Statistics Collector — v2 (Single-Pass Flat-Index).
  *
@@ -89,12 +88,13 @@ export function invalidateStatsCache(): void {
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 export function extractWikilinkName(text: string): string {
-	return text.replace(/\[\[(.*?)\]\]/g, (_match, inner) => {
+	return text.replace(/\[\[(.*?)\]\]/g, (_match, ...args) => {
+		const inner = String(args[0]);
 		const parts = inner.split("|");
-		if (parts.length > 1) return parts[1].trim();
-		const path = parts[0].trim();
+		if (parts.length > 1) return parts[1]?.trim() || "";
+		const path = parts[0]?.trim() || "";
 		const segments = path.split("/");
-		let name = segments[segments.length - 1];
+		let name = segments[segments.length - 1] || "";
 		if (name.toLowerCase().endsWith(".md")) {
 			name = name.slice(0, -3);
 		}
@@ -269,7 +269,7 @@ export function collectVaultStats(
 		// ── GLOBAL MOOD & FEELING TRACKING ──
 		const preCache = app.metadataCache.getFileCache(file);
 		if (preCache?.frontmatter) {
-			const fmRaw = preCache.frontmatter;
+			const fmRaw = preCache.frontmatter as Record<string, unknown>;
 			const moodKey = Object.keys(fmRaw).find(k => k.toLowerCase() === "mood");
 			const rawMood = moodKey ? fmRaw[moodKey] : undefined;
 			
@@ -285,7 +285,7 @@ export function collectVaultStats(
 				}
 			}
 			if (rawFeeling !== undefined && rawFeeling !== null) {
-				const feelings: string[] = Array.isArray(rawFeeling) ? rawFeeling : [String(rawFeeling)];
+				const feelings: string[] = Array.isArray(rawFeeling) ? rawFeeling.map(String) : [String(rawFeeling as string)];
 				const fdMatch = file.basename.match(/\d{4}-\d{2}-\d{2}/);
 				const fDate = fdMatch ? fdMatch[0] : (new Date(file.stat.ctime).toISOString().split("T")[0] as string);
 				for (const f of feelings) {
@@ -410,7 +410,7 @@ export function collectVaultStats(
 					const pVal = String(fm.progress).toLowerCase();
 					rs.forgeProgressDistribution[pVal] = (rs.forgeProgressDistribution[pVal] || 0) + 1;
 					if (wipStages) {
-						if (wipStages.has(fm.progress)) rs.forgeWipCount++;
+						if (wipStages.has(String(fm.progress))) rs.forgeWipCount++;
 					} else {
 						if (!["raw", "done", "archived", "completed"].includes(pVal)) {
 							rs.forgeWipCount++;

@@ -181,10 +181,11 @@ export class DashboardModal extends Modal {
 
 		createStatBox("file-text", this.settings.language === "vi" ? "TỔNG GHI CHÚ HOẠT ĐỘNG" : "TOTAL ACTIVE NOTES", this.stats.totalActiveNotes);
 
-		createStatBox("inbox", "CAPTURE", this.stats.notesPerFolder[FlowRole.CAPTURE] || 0);
-		createStatBox("calendar", "TRACK", this.stats.notesPerFolder[FlowRole.TRACK] || 0);
-		createStatBox("hammer", "FORGE", this.stats.notesPerFolder[FlowRole.FORGE] || 0);
-		createStatBox("library", "EXHIBIT", this.stats.notesPerFolder[FlowRole.EXHIBIT] || 0);
+		const getFolderName = (role: FlowRole) => (this.settings.folderMap[role] || role).replace(/^\d+\.\s*/, "").toUpperCase();
+		createStatBox("inbox", getFolderName(FlowRole.CAPTURE), this.stats.notesPerFolder[FlowRole.CAPTURE] || 0);
+		createStatBox("calendar", getFolderName(FlowRole.TRACK), this.stats.notesPerFolder[FlowRole.TRACK] || 0);
+		createStatBox("hammer", getFolderName(FlowRole.FORGE), this.stats.notesPerFolder[FlowRole.FORGE] || 0);
+		createStatBox("library", getFolderName(FlowRole.EXHIBIT), this.stats.notesPerFolder[FlowRole.EXHIBIT] || 0);
 	}
 
 	private renderViewToggle(container: HTMLElement) {

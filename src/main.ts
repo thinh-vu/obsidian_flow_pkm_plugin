@@ -1,4 +1,3 @@
-/* eslint-disable obsidianmd/ui/sentence-case */
 /**
  * Obsidian FLOW Plugin — Main entry point.
  *
@@ -37,7 +36,7 @@ export default class FlowPlugin extends Plugin {
 		if (this.settings.showRibbonIcon) {
 			this.ribbonIconEl = this.addRibbonIcon(
 				"waves",
-				"FLOW dashboard",
+				"Flow dashboard",
 				async () => {
 					const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 					new DashboardModal(this.app, this.settings).open();

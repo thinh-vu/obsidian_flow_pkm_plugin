@@ -283,3 +283,87 @@ export async function syncObsidianConfigs(
 		new Notice(`FLOW: Updated ${updatedCount} Obsidian config file(s) with new folder paths. Please reload Obsidian to apply.`);
 	}
 }
+
+/**
+ * Sync all Markdown files in the vault to reflect new folder names.
+ * Carefully replaces references to the old folder names with the new ones
+ * using safe boundaries (quotes, links, YAML properties) to avoid replacing natural language.
+ */
+export async function syncVaultContents(
+	vault: Vault,
+	oldMap: FlowFolderMap,
+	newMap: FlowFolderMap
+): Promise<void> {
+	const pairsToSync: [string, string][] = [];
+	for (const role of FLOW_ROLE_ORDER) {
+		const oldPath = oldMap[role];
+		const newPath = newMap[role];
+		if (oldPath && newPath && oldPath !== newPath) {
+			pairsToSync.push([oldPath, newPath]);
+		}
+	}
+
+	if (pairsToSync.length === 0) return;
+
+	let updatedCount = 0;
+	const mdFiles = vault.getMarkdownFiles();
+
+	for (const file of mdFiles) {
+		try {
+			await vault.process(file, (content) => {
+				let modified = false;
+				let newContent = content;
+
+				for (const [oldPath, newPath] of pairsToSync) {
+					// Prepare variations to catch (both with and without prefix)
+					const oldBare = oldPath.replace(/^\d+\.\s*/, "");
+					const newBare = newPath.replace(/^\d+\.\s*/, "");
+
+					const replacements = [
+						{ oldStr: oldPath, newStr: newPath },
+					];
+					if (oldBare !== oldPath) {
+						replacements.push({ oldStr: oldBare, newStr: newBare });
+					}
+
+					for (const { oldStr, newStr } of replacements) {
+						const escapedOld = oldStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+						
+						// Replace inside quotes (e.g., Dataview queries or JSON within MD): "Capture" -> "Inbox"
+						const quoteRegex = new RegExp(`(["'])${escapedOld}(["'])`, "g");
+						if (quoteRegex.test(newContent)) {
+							newContent = newContent.replace(quoteRegex, `$1${newStr}$2`);
+							modified = true;
+						}
+						
+						// Replace in links (WikiLinks or Markdown links): [[Capture/ or (../Capture/ -> [[Inbox/ or (../Inbox/
+						const linkRegex = new RegExp(`(\\[\\[|\\()([\\.\\/]*)${escapedOld}(/)`, "g");
+						if (linkRegex.test(newContent)) {
+							newContent = newContent.replace(linkRegex, `$1$2${newStr}$3`);
+							modified = true;
+						}
+						
+						// Replace in YAML frontmatter properties: folder: Capture -> folder: Inbox
+						// Matches "key: Value" or "- Value"
+						const yamlRegex = new RegExp(`(^|\\n)([\\w-]+:\\s*|\\s*-\\s*)${escapedOld}($|\\n)`, "g");
+						if (yamlRegex.test(newContent)) {
+							newContent = newContent.replace(yamlRegex, `$1$2${newStr}$3`);
+							modified = true;
+						}
+					}
+				}
+
+				if (modified) {
+					updatedCount++;
+				}
+				return newContent;
+			});
+		} catch (e) {
+			console.warn(`[FLOW] Failed to process file ${file.path}:`, e);
+		}
+	}
+
+	if (updatedCount > 0) {
+		new Notice(`FLOW: Updated ${updatedCount} Markdown file(s) with new folder names.`);
+	}
+}

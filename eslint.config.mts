@@ -5,6 +5,7 @@ import { globalIgnores } from "eslint/config";
 
 export default tseslint.config(
 	{
+		files: ["**/*.ts", "**/*.tsx"],
 		languageOptions: {
 			globals: {
 				...globals.browser,

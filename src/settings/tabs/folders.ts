@@ -3,7 +3,7 @@ import { Setting, Notice } from "obsidian";
 import type FlowPlugin from "../../main";
 import { FLOW_PRESETS, getPresetById, applyPrefixFormat } from "../../constants";
 import { FLOW_ROLE_ORDER } from "../../types";
-import { renameFlowFolders, syncObsidianConfigs } from "../../core/folder-manager";
+import { renameFlowFolders, syncObsidianConfigs, syncVaultContents } from "../../core/folder-manager";
 import type { FlowSettingTab } from "../../settings";
 import { getSettingsLabels } from "../../i18n/settings-labels";
 
@@ -45,6 +45,7 @@ export class FoldersTab {
 					const newMap = this.plugin.settings.folderMap;
 					await renameFlowFolders(this.plugin.app.vault, oldMap, newMap);
 					await syncObsidianConfigs(this.plugin.app.vault, oldMap, newMap);
+					await syncVaultContents(this.plugin.app.vault, oldMap, newMap);
 
 					this.plugin.reinstallSort();
 					this.settingTab.display();
@@ -70,6 +71,7 @@ export class FoldersTab {
 
 					await renameFlowFolders(this.plugin.app.vault, oldMap, newMap);
 					await syncObsidianConfigs(this.plugin.app.vault, oldMap, newMap);
+					await syncVaultContents(this.plugin.app.vault, oldMap, newMap);
 					this.plugin.reinstallSort();
 					this.settingTab.display();
 				});
@@ -148,6 +150,7 @@ export class FoldersTab {
 							await this.plugin.saveSettings();
 							await renameFlowFolders(this.plugin.app.vault, oldMap, this.plugin.settings.folderMap);
 							await syncObsidianConfigs(this.plugin.app.vault, oldMap, this.plugin.settings.folderMap);
+							await syncVaultContents(this.plugin.app.vault, oldMap, this.plugin.settings.folderMap);
 							this.plugin.reinstallSort();
 						}
 					});

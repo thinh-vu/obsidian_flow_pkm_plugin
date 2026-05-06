@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any */
 import { App, setIcon, TFile } from "obsidian";
 import { FlowPluginSettings, FlowRole } from "../../../types";
 import { VaultStats, extractWikilinkName } from "../stats-collector";
-import { BRAND } from "../../../brand-colors";
 
 export class NavigatorView {
 	private navigatorSortCol: number = 0;
@@ -37,7 +35,7 @@ export class NavigatorView {
 
 		if (this.navigatorVisibleCols.length < allColNames.length) {
 			const diff = allColNames.length - this.navigatorVisibleCols.length;
-			this.navigatorVisibleCols.push(...Array(diff).fill(true));
+			this.navigatorVisibleCols.push(...Array<boolean>(diff).fill(true));
 		}
 
 		let triggerRenderTable: () => void = () => { };
@@ -444,10 +442,12 @@ export class NavigatorView {
 				const tag = inp.value.trim().replace(/^#/, "");
 				if (!tag) return;
 				for (const f of selectedFiles) {
-					await (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
+					await (this.app as App & { fileManager: { processFrontMatter: (file: TFile, fn: (fm: Record<string, unknown>) => void) => Promise<void> } }).fileManager.processFrontMatter(f, (fm: Record<string, unknown>) => {
 						if (!fm.tags) fm.tags = [];
-						if (!Array.isArray(fm.tags)) fm.tags = [String(fm.tags)];
-						if (!fm.tags.includes(tag)) fm.tags.push(tag);
+						let tags = fm.tags;
+						if (!Array.isArray(tags)) tags = [String(tags)];
+						if (!(tags as string[]).includes(tag)) (tags as string[]).push(tag);
+						fm.tags = tags;
 					});
 				}
 				popup.remove();
@@ -478,7 +478,7 @@ export class NavigatorView {
 				const val = valInp.value.trim();
 				if (!key) return;
 				for (const f of selectedFiles) {
-					await (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
+					await (this.app as App & { fileManager: { processFrontMatter: (file: TFile, fn: (fm: Record<string, unknown>) => void) => Promise<void> } }).fileManager.processFrontMatter(f, (fm: Record<string, unknown>) => {
 						fm[key] = val;
 					});
 				}
@@ -498,7 +498,7 @@ export class NavigatorView {
 			popup.createEl("h4", { text: isVi ? "Di chuyển file" : "Move files", cls: "flow-popup-h4" });
 
 			const allFolders: string[] = [];
-			interface FolderLike { children?: { path: string; children?: any }[] }
+			interface FolderLike { children?: { path: string; children?: unknown }[] }
 			const collectFolders = (folder: FolderLike) => {
 				for (const child of folder.children || []) {
 					if (child.children !== undefined) {
@@ -563,7 +563,7 @@ export class NavigatorView {
 
 		const mdFiles = this.app.vault.getMarkdownFiles();
 
-		let incomingFiles = new Map<string, import("obsidian").TFile[]>();
+		let incomingFiles = new Map<string, TFile[]>();
 
 		triggerRenderTable = () => {
 			tableArea.empty();
@@ -624,12 +624,12 @@ export class NavigatorView {
 
 			const tbody = table.createEl("tbody");
 
-			const getValString = (file: any, colIdx: number): string => {
+			const getValString = (file: TFile & { isOrphanItem?: boolean; file?: TFile; values?: unknown }, colIdx: number): string => {
 				const name = (activeColNames[colIdx] || "").toLowerCase();
 				if (name === "#" || name === "☑") return "";
 				if (name === "tag name" || name === "property name" || name === "name") return (file.basename || "").toLowerCase();
 				if (name === "used in note") return (file.file?.basename || "").toLowerCase();
-				if (name === "values") return String(file.values || "").toLowerCase();
+				if (name === "values") return (Array.isArray(file.values) ? file.values.join(", ") : String(file.values as string || "")).toLowerCase();
 				
 				if (name === "folder") return (file.parent?.path || "").toLowerCase();
 				if (name === "created") return new Date(file.stat?.ctime || 0).toISOString();
@@ -642,13 +642,13 @@ export class NavigatorView {
 
 				const cache = this.app.metadataCache.getFileCache(file);
 				if (name === "tags") {
-					if (cache?.tags) return cache.tags.map((t: any) => t.tag).join(", ");
+					if (cache?.tags) return cache.tags.map((t: { tag: string }) => t.tag).join(", ");
 					if (cache?.frontmatter?.tags) return String(cache.frontmatter.tags);
 					return "";
 				}
 				if (cache?.frontmatter && cache.frontmatter[name] !== undefined) {
-					const val = cache.frontmatter[name];
-					return Array.isArray(val) ? val.map((v: any) => extractWikilinkName(String(v))).join(", ") : extractWikilinkName(String(val));
+					const val: unknown = cache.frontmatter[name];
+					return Array.isArray(val) ? val.map((v: unknown) => extractWikilinkName(String(v))).join(", ") : extractWikilinkName(String(val));
 				}
 				return "";
 			};
@@ -663,19 +663,19 @@ export class NavigatorView {
 					for (const tgt in resolvedLinks[src]) {
 						if (!incomingFiles.has(tgt)) incomingFiles.set(tgt, []);
 						const srcFile = this.app.vault.getAbstractFileByPath(src);
-						if (srcFile && (srcFile as any).extension === "md") {
-							incomingFiles.get(tgt)!.push(srcFile as import("obsidian").TFile);
+						if (srcFile instanceof TFile && srcFile.extension === "md") {
+							incomingFiles.get(tgt)!.push(srcFile);
 						}
 					}
 				}
 
-				let sourceFiles: any[];
+				let sourceFiles: (TFile & { isOrphanItem?: boolean; file?: TFile; values?: unknown })[];
 				if (isAttachmentMode) {
 					sourceFiles = allVaultFiles;
 				} else if (isTagHealthMode || isPropHealthMode) {
 					sourceFiles = [];
-					let tagCounts: Record<string, import("obsidian").TFile[]> = {};
-					let propCounts: Record<string, { file: import("obsidian").TFile, values: any }[]> = {};
+					let tagCounts: Record<string, TFile[]> = {};
+					let propCounts: Record<string, { file: TFile, values: unknown }[]> = {};
 
 					for (const f of mdFiles) {
 						const c = this.app.metadataCache.getFileCache(f);
@@ -712,7 +712,7 @@ export class NavigatorView {
 									stat: files[0]!.stat,
 									parent: files[0]!.parent,
 									extension: files[0]!.extension
-								});
+								} as unknown as TFile & { isOrphanItem?: boolean; file?: TFile; values?: unknown });
 							}
 						}
 					} else if (isPropHealthMode) {
@@ -727,7 +727,7 @@ export class NavigatorView {
 									stat: files[0]!.file.stat,
 									parent: files[0]!.file.parent,
 									extension: files[0]!.file.extension
-								});
+								} as unknown as TFile & { isOrphanItem?: boolean; file?: TFile; values?: unknown });
 							}
 						}
 					}
@@ -742,8 +742,8 @@ export class NavigatorView {
 					}
 
 					if (this.navigatorActiveFilters.length > 0) {
-						const cache = this.app.metadataCache.getFileCache(f.isOrphanItem ? f.file : f);
-						const fm = cache?.frontmatter;
+						const cache = this.app.metadataCache.getFileCache(f.isOrphanItem ? f.file! : f);
+						const fm = cache?.frontmatter as Record<string, unknown> | undefined;
 						const now = Date.now();
 						const typedFilters: Record<string, string[]> = {};
 						
@@ -762,13 +762,13 @@ export class NavigatorView {
 									const folderName = this.settings.folderMap[val as FlowRole];
 									if (folderName) {
 										const cleanActiveFolder = folderName.replace(/^\d+\.\s*/, "").trim().toLowerCase();
-										const NotePath = (f.isOrphanItem ? f.file.parent?.path : f.parent?.path) || "";
+										const NotePath = (f.isOrphanItem ? f.file!.parent?.path : f.parent?.path) || "";
 										const cleanFolderPath = NotePath.replace(/^\d+\.\s*/, "").trim().toLowerCase();
 										valMatch = cleanFolderPath.startsWith(cleanActiveFolder);
 									}
 								} else if (fType === "task") {
-									if (val === "todo") valMatch = cache?.listItems?.some((li: any) => li.task !== undefined && li.task === " ") ?? false;
-									else if (val === "done") valMatch = cache?.listItems?.some((li: any) => li.task !== undefined && li.task !== " ") ?? false;
+									if (val === "todo") valMatch = cache?.listItems?.some((li: { task?: string }) => li.task !== undefined && li.task === " ") ?? false;
+									else if (val === "done") valMatch = cache?.listItems?.some((li: { task?: string }) => li.task !== undefined && li.task !== " ") ?? false;
 								} else if (fType === "eisenhower") {
 									const urgencyField = this.settings.urgencyConfig?.fieldName || "urgency";
 									const impactField = this.settings.impactConfig?.fieldName || "impact";
@@ -784,7 +784,7 @@ export class NavigatorView {
 									else if (val === "p4") valMatch = !urgencyHigh && !impactHigh;
 
 								} else if (fType === "temperature") {
-									const ageDays = (now - (f.isOrphanItem ? f.file.stat.mtime : f.stat.mtime)) / (24 * 60 * 60 * 1000);
+									const ageDays = (now - (f.isOrphanItem ? f.file!.stat.mtime : f.stat.mtime)) / (24 * 60 * 60 * 1000);
 									if (val === "hot") valMatch = ageDays < 3;
 									else if (val === "warm") valMatch = ageDays >= 3 && ageDays <= 30;
 									else if (val === "cold") valMatch = ageDays > 30;
@@ -793,7 +793,7 @@ export class NavigatorView {
 									const chField = this.settings.channelFieldName || "channel";
 									const chVal = fm?.[chField];
 									if (chVal) {
-										const channels = Array.isArray(chVal) ? chVal.flatMap(v => String(v).split(",").map(s => s.trim().toLowerCase())) : String(chVal).split(",").map(c => c.trim().toLowerCase());
+										const channels = Array.isArray(chVal) ? chVal.flatMap(v => String(v).split(",").map(s => s.trim().toLowerCase())) : String(chVal as string).split(",").map(c => c.trim().toLowerCase());
 										valMatch = channels.includes(val.toLowerCase());
 									}
 
@@ -802,7 +802,7 @@ export class NavigatorView {
 									const pubVal = fm?.[pubField];
 									if (!pubVal && val === "later") valMatch = true;
 									else if (pubVal) {
-										const pubDate = new Date(String(pubVal)).getTime();
+										const pubDate = new Date(String(pubVal as string)).getTime();
 										if (!isNaN(pubDate)) {
 											const diffDays = (pubDate - now) / (86400000);
 											if (val === "today") valMatch = diffDays >= 0 && diffDays <= 1;
@@ -816,7 +816,7 @@ export class NavigatorView {
 								} else if (fType === "feeling") {
 									const feelVal = fm?.feeling;
 									if (feelVal) {
-										const feelings = Array.isArray(feelVal) ? feelVal.map((v: any) => String(v).toLowerCase()) : [String(feelVal).toLowerCase()];
+										const feelings = Array.isArray(feelVal) ? feelVal.map((v: unknown) => String(v).toLowerCase()) : [String(feelVal as string).toLowerCase()];
 										valMatch = feelings.includes(val.toLowerCase());
 									}
 
@@ -946,7 +946,6 @@ export class NavigatorView {
 						if (fileSizeMB > 10) tdSize.setCssProps({ "color": "var(--text-error)" })
 						else if (fileSizeMB > 2) tdSize.setCssProps({ "color": "var(--color-orange)" })
 
-						const fileType = extTypeMap[file.extension.toLowerCase()] || "other";
 						const tdType = tr.createEl("td"); tdType.setCssProps({ "padding": "6px 8px", "font-size": "0.82em", "color": "var(--text-accent)" })
 						tdType.setText(file.extension.toLowerCase());
 
@@ -995,15 +994,15 @@ export class NavigatorView {
 						const tdNote = tr.createEl("td"); tdNote.setCssProps({ "padding": "6px 8px", "font-size": "0.85em" })
 						const noteLink = tdNote.createSpan();
 						noteLink.setCssProps({ "color": "var(--text-accent)", "cursor": "pointer", "text-decoration": "underline" })
-						noteLink.setText(file.file.basename);
+						noteLink.setText(file.file!.basename);
 						noteLink.onclick = (e) => {
 							e.stopPropagation();
-							void this.app.workspace.getLeaf(false).openFile(file.file);
+							void this.app.workspace.getLeaf(false).openFile(file.file!);
 						};
 
 						if (isPropHealthMode) {
 							const tdVals = tr.createEl("td"); tdVals.setCssProps({ "padding": "6px 8px", "font-size": "0.85em", "color": "var(--text-muted)", "word-break": "break-all" })
-							tdVals.setText(String(file.values || ""));
+							tdVals.setText(Array.isArray(file.values) ? file.values.join(", ") : String(file.values as string || ""));
 						}
 					} else {
 						const tdCb = tr.createEl("td"); tdCb.setCssProps({ "padding": "4px 6px" })
@@ -1043,14 +1042,14 @@ export class NavigatorView {
 								let tagsText = "";
 								if (cache?.tags) tagsText = cache.tags.map(t => t.tag).join(", ");
 								else if (cache?.frontmatter?.tags) {
-									const fmTags = cache.frontmatter.tags;
+									const fmTags: unknown = cache.frontmatter.tags;
 									tagsText = Array.isArray(fmTags) ? fmTags.join(", ") : String(fmTags);
 								}
 								td.setText(tagsText || "-");
 								td.addClass("flow-nav-td-accent");
 							} else {
 								let valText = "-";
-								const readProp = (propValue: any) => {
+								const readProp = (propValue: unknown) => {
 									return Array.isArray(propValue) ? propValue.map(v => extractWikilinkName(String(v))).join(", ") : extractWikilinkName(String(propValue));
 								};
 								if (cache?.frontmatter && cache.frontmatter[lowerCol] !== undefined) {

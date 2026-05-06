@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
  
-import { App, setIcon } from "obsidian";
+import { App } from "obsidian";
 import type * as echartsCore from "echarts/core";
 import type { EChartsOption } from "echarts";
-import { FlowPluginSettings, TagNode } from "../../../types";
+import { FlowPluginSettings, TagNode, FlowRole } from "../../../types";
 import { VaultStats } from "../stats-collector";
 import { detectBlueprintMissions } from "../../../core/blueprint-detect";
 import { CHART_PALETTE, WARM_CHART_PALETTE, MISSION_STATUS } from "../../../brand-colors";
@@ -57,10 +56,10 @@ export class TaxonomyView {
 			const chartInstance = this.echartsModule.init(chartDiv, "light");
 			this.chartInstances.push(chartInstance);
 
-			let sunburstData: any[];
+			let sunburstData: Record<string, unknown>[];
 
 			if (hasTaxonomy) {
-				const convertToSunburst = (nodes: TagNode[]): any[] => {
+				const convertToSunburst = (nodes: TagNode[]): Record<string, unknown>[] => {
 					return nodes.map(node => ({
 						name: node.name,
 						value: node.children?.length > 0 ? undefined : 1,
@@ -81,7 +80,7 @@ export class TaxonomyView {
 					}
 				}
 
-				const treeToData = (tree: Record<string, TagTreeNode>): any[] => {
+				const treeToData = (tree: Record<string, TagTreeNode>): Record<string, unknown>[] => {
 					return Object.entries(tree).map(([name, node]) => {
 						const children = treeToData(node._children || {});
 						return {
@@ -117,7 +116,7 @@ export class TaxonomyView {
 				}],
 			};
 
-			chartInstance.setOption(sunburstOption as any, true);
+			chartInstance.setOption(sunburstOption as echartsCore.EChartsCoreOption, true);
 		} else {
 			const emptyTag = this.container.createDiv();
 			emptyTag.addClass("flow-dashboard-ui-19");
@@ -134,7 +133,7 @@ export class TaxonomyView {
 			const dimChart = this.echartsModule.init(dimChartDiv, "light");
 			this.chartInstances.push(dimChart);
 
-			const treemapData: any[] = [];
+			const treemapData: Record<string, unknown>[] = [];
 			const dimPalette = [...CHART_PALETTE];
 
 			for (let di = 0; di < dimensions.length; di++) {
@@ -152,7 +151,7 @@ export class TaxonomyView {
 					}
 				}
 
-				const children: unknown[] = [];
+				const children: { name: string; value: number }[] = [];
 				const addedValues = new Set<string>();
 
 				for (const val of dim.values) {
@@ -187,10 +186,11 @@ export class TaxonomyView {
 					backgroundColor: "transparent",
 					title: { text: isVi ? "Thuộc tính theo phân loại" : "Properties by dimension", left: "center", top: 50, textStyle: { fontSize: 14 } },
 					tooltip: {
-						formatter: (params: any) => {
-							const treePathInfo = ((params as { treePathInfo?: { name?: string }[] }).treePathInfo) || [];
-							const path = treePathInfo.map(p => p.name).filter(Boolean).join(" → ");
-							return `${path}: <b>${params.value}</b> note(s)`;
+						formatter: (params) => {
+							const p = params as { value: number; treePathInfo?: { name?: string }[] };
+							const treePathInfo = p.treePathInfo || [];
+							const path = treePathInfo.map(node => node.name).filter(Boolean).join(" → ");
+							return `${path}: <b>${p.value}</b> note(s)`;
 						},
 					},
 					series: [{
@@ -213,7 +213,7 @@ export class TaxonomyView {
 					}],
 				};
 
-				dimChart.setOption(dimOption as any, true);
+				dimChart.setOption(dimOption as echartsCore.EChartsCoreOption, true);
 			} else {
 				dimChartDiv.remove();
 			}
@@ -223,7 +223,8 @@ export class TaxonomyView {
 		const missionBoard = this.container.createDiv();
 		missionBoard.addClass("flow-taxonomy-mission-padding");
 
-		const mTitle = missionBoard.createEl("h4", { text: "Blueprints" });
+		const blueprintName = (this.settings.folderMap[FlowRole.BLUEPRINT] || "Blueprints").replace(/^\d+\.\s*/, "");
+		const mTitle = missionBoard.createEl("h4", { text: blueprintName });
 		mTitle.addClass("flow-taxonomy-mission-title");
 
 		if (missions.length === 0) {

@@ -481,8 +481,6 @@ export class TaskSidebarView extends ItemView {
 										insertIdx++;
 										continue;
 									}
-									const nextIndentMatch = nextLine.match(/^(\s*)/);
-									const nextIndent = nextIndentMatch ? nextIndentMatch[1] : "";
 									
 									if (nextLine.startsWith(parentIndent) && nextLine.length > parentIndent.length && /^\s/.test(nextLine.substring(parentIndent.length))) {
 										insertIdx++;

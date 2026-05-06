@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/await-thenable */
  
 import { App, setIcon, TFile, moment, Notice, Platform } from "obsidian";
 import { FlowPluginSettings, FlowRole } from "../../../types";
@@ -166,25 +165,18 @@ export class TaskView {
 			{ key: "$14:00", label: "Chiều 2h", type: "time" },
 			{ key: "$16:00", label: "Chiều 4h", type: "time" },
 			{ key: "$20:00", label: "Tối 8h", type: "time" },
-			{ key: "!1", label: "Quan trọng & Khẩn cấp", type: "priority" },
-			{ key: "!2", label: "Quan trọng", type: "priority" },
-			{ key: "!3", label: "Khẩn cấp", type: "priority" },
-			{ key: "!important", label: "Quan trọng", type: "priority" },
-			{ key: "!urgent", label: "Khẩn cấp", type: "priority" }
+			{ key: "!p1", label: "P1", type: "priority" },
+			{ key: "!p2", label: "P2", type: "priority" },
+			{ key: "!p3", label: "P3", type: "priority" },
+			{ key: "!p4", label: "P4", type: "priority" },
+			{ key: "!important", label: "Quan trọng", type: "matrix" },
+			{ key: "!urgent", label: "Khẩn cấp", type: "matrix" },
+			{ key: "!not-important", label: "Không quan trọng", type: "matrix" },
+			{ key: "!not-urgent", label: "Không khẩn cấp", type: "matrix" }
 		];
 		
-		interface SuggestionPreset { key: string; label: string; type: string; taskRef?: unknown; }
+		interface SuggestionPreset { key: string; label: string; type: string; taskRef?: { id?: string; file: import("obsidian").TFile; line: number }; }
 		let dynamicPresets: SuggestionPreset[] = [...presets];
-
-		// Labels & Priorities
-		dynamicPresets.push(
-			{ key: "#p1", label: "Priority 1 (Important & Urgent)", type: "priority" },
-			{ key: "#p2", label: "Priority 2 (Important)", type: "priority" },
-			{ key: "#p3", label: "Priority 3 (Urgent)", type: "priority" },
-			{ key: "#p4", label: "Priority 4", type: "priority" },
-			{ key: "#important", label: "Quan trọng", type: "priority" },
-			{ key: "#urgent", label: "Khẩn cấp", type: "priority" },
-		);
 
 		// Recurring Tasks
 		dynamicPresets.push(
@@ -250,7 +242,7 @@ export class TaskView {
 				const rule = suggestion.key.replace("??", "");
 				insertKey = `%%recur:${rule || "YYYY-MM-DD"}%%`;
 			} else if (suggestion.type === "parent_task") {
-				const t = suggestion.taskRef as any;
+				const t = suggestion.taskRef as { id: string; file: TFile; line: number };
 				let parentId = t.id;
 				if (!parentId) {
 					parentId = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -394,7 +386,7 @@ export class TaskView {
 				const recurRule = recurMatch ? recurMatch[1] : undefined;
 				
 				if (targetFile) {
-					this.tasks.unshift({
+					const newTask: TaskItem = {
 						file: targetFile,
 						line: 9999, // Dummy line for optimistic update
 						text: text,
@@ -402,8 +394,21 @@ export class TaskView {
 						folder: targetFolder,
 						parentId: parentId,
 						recur: recurRule,
-						level: parentId ? 1 : 0
-					});
+						level: 0
+					};
+					
+					if (parentId) {
+						const parentIndex = this.tasks.findIndex(t => t.id === parentId);
+						if (parentIndex !== -1) {
+							const pTask = this.tasks[parentIndex];
+							newTask.level = (pTask && pTask.level ? pTask.level : 0) + 1;
+							this.tasks.splice(parentIndex + 1, 0, newTask);
+						} else {
+							this.tasks.unshift(newTask);
+						}
+					} else {
+						this.tasks.unshift(newTask);
+					}
 					void this.renderTaskList();
 				}
 			}
@@ -476,40 +481,56 @@ export class TaskView {
 			assignDateTime(m.format("YYYY-MM-DD"), "08:00", nextWeekMatch[0]);
 		}
 
-		let isImportant = false;
-		let isUrgent = false;
+		const importantMatch = text.match(/!(important|quan-trong|quan trọng)\b/i);
+		const notImportantMatch = text.match(/!(not-important|khong-quan-trong|không quan trọng)\b/i);
+		const urgentMatch = text.match(/!(urgent|khan-cap|khẩn cấp)\b/i);
+		const notUrgentMatch = text.match(/!(not-urgent|non-urgent|khong-khan-cap|không khẩn cấp)\b/i);
 
-		const importantMatch = text.match(/!(important|quan-trong|quan trọng)/i);
-		const urgentMatch = text.match(/!(urgent|khan-cap|khẩn cấp)/i);
-		const matrix1 = text.match(/!1/);
-		const matrix2 = text.match(/!2/);
-		const matrix3 = text.match(/!3/);
+		const p1Match = text.match(/!(p1|1)\b/i);
+		const p2Match = text.match(/!(p2|2)\b/i);
+		const p3Match = text.match(/!(p3|3)\b/i);
+		const p4Match = text.match(/!(p4|4)\b/i);
 
-		if (importantMatch || matrix1 || matrix2) isImportant = true;
-		if (urgentMatch || matrix1 || matrix3) isUrgent = true;
+		let priorityLevel: number | null = null;
+		if (p1Match) priorityLevel = 1;
+		else if (p2Match) priorityLevel = 2;
+		else if (p3Match) priorityLevel = 3;
+		else if (p4Match) priorityLevel = 4;
+
+		const isImportant = importantMatch !== null;
+		const isNotImportant = notImportantMatch !== null;
+		const isUrgent = urgentMatch !== null;
+		const isNotUrgent = notUrgentMatch !== null;
 
 		if (importantMatch) text = text.replace(importantMatch[0], "");
+		if (notImportantMatch) text = text.replace(notImportantMatch[0], "");
 		if (urgentMatch) text = text.replace(urgentMatch[0], "");
-		if (matrix1) text = text.replace(matrix1[0], "");
-		if (matrix2) text = text.replace(matrix2[0], "");
-		if (matrix3) text = text.replace(matrix3[0], "");
+		if (notUrgentMatch) text = text.replace(notUrgentMatch[0], "");
+
+		if (p1Match) text = text.replace(p1Match[0], "");
+		if (p2Match) text = text.replace(p2Match[0], "");
+		if (p3Match) text = text.replace(p3Match[0], "");
+		if (p4Match) text = text.replace(p4Match[0], "");
 
 		text = text.trim().replace(/\s+/g, ' ');
 		
 		let tags = "";
-		if (isImportant) tags += " #task/priority/important";
-		if (isUrgent) tags += " #task/priority/urgent";
+		if (priorityLevel === 1 || (isImportant && isUrgent)) {
+			tags += " #task/priority/p1";
+		} else if (priorityLevel === 2 || (isImportant && (isNotUrgent || (!isUrgent && !isNotUrgent)))) {
+			tags += " #task/priority/p2";
+		} else if (priorityLevel === 3 || (isUrgent && (isNotImportant || (!isImportant && !isNotImportant)))) {
+			tags += " #task/priority/p3";
+		} else if (priorityLevel === 4 || (isNotImportant && isNotUrgent) || (isNotImportant && !isUrgent && !isNotUrgent) || (isNotUrgent && !isImportant && !isNotImportant)) {
+			tags += " #task/priority/p4";
+		}
 
 		// Capture all #tags and auto-format
 		const tagMatches = text.match(/#[\w_À-ỹ-]+/g);
 		if (tagMatches) {
 			for (const tag of tagMatches) {
 				const tagName = tag.substring(1).toLowerCase();
-				if (["p1", "p2", "p3", "p4", "important", "urgent"].includes(tagName)) {
-					if (!tags.includes(`#task/priority/${tagName}`)) {
-						tags += ` #task/priority/${tagName}`;
-					}
-				} else if (tagName.startsWith("task/")) {
+				if (tagName.startsWith("task/")) {
 					if (!tags.includes(tag)) tags += ` ${tag}`;
 				} else {
 					tags += ` #task/label/${tagName}`;
@@ -849,14 +870,74 @@ export class TaskView {
 			item.setCssProps({ "display": `flex`, "align-items": `flex-start`, "gap": `16px`, "padding": `16px 20px`, "margin-left": `${indentPx}px`, "background": `var(--background-primary)`, "border": `1px solid var(--background-modifier-border)`, "border-radius": `12px`, "transition": `all 0.2s ease`, "box-shadow": `0 1px 3px rgba(0,0,0,0.03)` })
 			
 			item.onmouseenter = () => {
-				item.setCssProps({ "transform": "translateY(-1px)" })
-				item.setCssProps({ "box-shadow": "0 6px 16px rgba(0,0,0,0.06)" })
-				item.setCssProps({ "border-color": "var(--interactive-accent)" })
+				item.setCssProps({ "transform": "translateY(-1px)", "box-shadow": "0 6px 16px rgba(0,0,0,0.06)", "border-color": "var(--interactive-accent)" })
 			};
 			item.onmouseleave = () => {
-				item.setCssProps({ "transform": "none" })
-				item.setCssProps({ "box-shadow": "0 2px 4px rgba(0,0,0,0.02)" })
-				item.setCssProps({ "border-color": "var(--background-modifier-border)" })
+				item.setCssProps({ "transform": "none", "box-shadow": "0 2px 4px rgba(0,0,0,0.02)", "border-color": "var(--background-modifier-border)" })
+			};
+
+			item.draggable = true;
+			item.ondragstart = (e) => {
+				if (e.dataTransfer) {
+					e.dataTransfer.setData("application/json", JSON.stringify({ sourcePath: task.file.path, sourceLine: task.line, sourceId: task.id }));
+					e.dataTransfer.effectAllowed = "move";
+				}
+				item.setCssProps({ "opacity": "0.5" })
+			};
+			item.ondragend = () => {
+				item.setCssProps({ "opacity": "1" })
+				this.listContainer.findAll('.flow-drag-over-top, .flow-drag-over-bottom, .flow-drag-over-center').forEach(el => {
+					el.removeClass('flow-drag-over-top', 'flow-drag-over-bottom', 'flow-drag-over-center');
+					el.setCssProps({ "border-top": "", "border-bottom": "", "background": "var(--background-primary)" })
+				});
+			};
+			item.ondragover = (e) => {
+				e.preventDefault();
+				if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+				
+				const rect = item.getBoundingClientRect();
+				const y = e.clientY - rect.top;
+				item.removeClass('flow-drag-over-top', 'flow-drag-over-bottom', 'flow-drag-over-center');
+				item.setCssProps({ "border-top": "", "border-bottom": "", "background": "var(--background-primary)" })
+				
+				if (y < rect.height * 0.25) {
+					item.addClass('flow-drag-over-top');
+					item.setCssProps({ "border-top": "2px solid var(--interactive-accent)" })
+				} else if (y > rect.height * 0.75) {
+					item.addClass('flow-drag-over-bottom');
+					item.setCssProps({ "border-bottom": "2px solid var(--interactive-accent)" })
+				} else {
+					item.addClass('flow-drag-over-center');
+					item.setCssProps({ "background": "var(--background-modifier-hover)" })
+				}
+			};
+			item.ondragleave = () => {
+				item.removeClass('flow-drag-over-top', 'flow-drag-over-bottom', 'flow-drag-over-center');
+				item.setCssProps({ "border-top": "", "border-bottom": "", "background": "var(--background-primary)" })
+			};
+			item.ondrop = (e) => {
+				e.preventDefault();
+				item.removeClass('flow-drag-over-top', 'flow-drag-over-bottom', 'flow-drag-over-center');
+				item.setCssProps({ "border-top": "", "border-bottom": "", "background": "var(--background-primary)" })
+				if (!e.dataTransfer) return;
+				try {
+					const dataStr = e.dataTransfer.getData("application/json");
+					if (!dataStr) return;
+					const data = JSON.parse(dataStr) as { sourcePath: string; sourceLine: number; sourceId?: string };
+					if (data.sourcePath === task.file.path && data.sourceLine === task.line) return;
+					
+					const rect = item.getBoundingClientRect();
+					const y = e.clientY - rect.top;
+					let dropPosition: "top" | "bottom" | "center" = "center";
+					if (y < rect.height * 0.25) dropPosition = "top";
+					else if (y > rect.height * 0.75) dropPosition = "bottom";
+					
+					void (async () => {
+						await this.handleTaskDrop(data, task, dropPosition);
+					})();
+				} catch (err) {
+					console.error(err);
+				}
 			};
 
 			const statusChar = task.status.trim().toLowerCase();
@@ -996,7 +1077,9 @@ export class TaskView {
 				setIcon(recurIcon, "refresh-cw");
 				(recurIcon.querySelector("svg") as SVGElement)?.setAttribute("width", "12");
 				(recurIcon.querySelector("svg") as SVGElement)?.setAttribute("height", "12");
-				recurBadge.createSpan({ text: task.recur });
+				if (task.recur !== "~") {
+					recurBadge.createSpan({ text: task.recur });
+				}
 			}
 
 			const priorities: string[] = [];
@@ -1058,7 +1141,10 @@ export class TaskView {
 
 			// Action icons wrapper
 			const actionsDiv = metaDiv.createDiv();
-			actionsDiv.setCssProps({ "display": "flex", "gap": "16px", "margin-left": "auto" }) // Tăng gap lên 16px
+			actionsDiv.setCssProps({ "display": "flex", "gap": "16px", "margin-left": "auto", "opacity": "0", "transition": "opacity 0.2s ease" }) 
+			
+			item.addEventListener("mouseenter", () => actionsDiv.setCssProps({ "opacity": "1" }));
+			item.addEventListener("mouseleave", () => actionsDiv.setCssProps({ "opacity": "0" }));
 
 			// Delete icon
 			const deleteIcon = actionsDiv.createSpan();
@@ -1103,13 +1189,14 @@ export class TaskView {
 
 				const saveTask = async () => {
 					const newText = input.value;
-					if (newText !== task.text && newText.trim() !== "") {
-						task.text = newText;
-						textDiv.textContent = newText;
-						await this.updateTaskText(task.file, task.line, newText);
-					}
 					input.remove();
 					textDiv.setCssProps({ "display": "block" })
+					if (newText !== task.text && newText.trim() !== "") {
+						task.text = newText;
+						await this.updateTaskText(task.file, task.line, newText);
+						await this.loadTasks();
+						void this.renderTaskList();
+					}
 				};
 
 				input.onblur = () => saveTask();
@@ -1171,6 +1258,104 @@ export class TaskView {
 				}
 			}
 		}
+	}
+
+	private async handleTaskDrop(sourceData: { sourcePath: string; sourceLine: number; sourceId?: string }, targetTask: TaskItem, dropPosition: "top" | "bottom" | "center") {
+		const sourceTask = this.tasks.find(t => t.file.path === sourceData.sourcePath && t.line === sourceData.sourceLine);
+		if (!sourceTask) return;
+
+		if (dropPosition === "center") {
+			const isVi = this.settings.language === "vi";
+			if (!targetTask.id) {
+				targetTask.id = Date.now().toString(36);
+				await this.app.vault.process(targetTask.file, (content) => {
+					const lines = content.split('\n');
+					if (lines[targetTask.line]) {
+						lines[targetTask.line] = lines[targetTask.line] + ` %%id:${targetTask.id}%%`;
+					}
+					return lines.join('\n');
+				});
+			}
+			
+			await this.app.vault.process(sourceTask.file, (content) => {
+				const lines = content.split('\n');
+				const lineStr = lines[sourceTask.line];
+				if (lineStr !== undefined) {
+					lines[sourceTask.line] = lineStr.replace(/\s*%%parent:[^%]+%%\s*/g, ' ') + ` %%parent:${targetTask.id}%%`;
+				}
+				return lines.join('\n');
+			});
+			
+			new Notice(isVi ? "Đã liên kết tác vụ con" : "Linked as subtask");
+			await this.loadTasks();
+			void this.renderTaskList();
+			return;
+		}
+
+		if (sourceTask.file.path !== targetTask.file.path) {
+			const isVi = this.settings.language === "vi";
+			new Notice(isVi ? "Chỉ hỗ trợ sắp xếp ngang hàng trong cùng một file." : "Can only reorder tasks within the same file.");
+			return;
+		}
+
+		await this.app.vault.process(sourceTask.file, (content) => {
+			const lines = content.split('\n');
+			
+			const getBlockLength = (startLine: number) => {
+				if (startLine >= lines.length) return 0;
+				const startLineStr = lines[startLine];
+				if (startLineStr === undefined) return 0;
+				const baseIndentMatch = startLineStr.match(/^([ \t]*)/);
+				const baseIndent = (baseIndentMatch && baseIndentMatch[1]) ? baseIndentMatch[1].length : 0;
+				let i = startLine + 1;
+				while (i < lines.length) {
+					const lineStr = lines[i];
+					if (lineStr === undefined) break;
+					if (lineStr.trim() === "") { i++; continue; }
+					const indentMatch = lineStr.match(/^([ \t]*)/);
+					const indent = (indentMatch && indentMatch[1]) ? indentMatch[1].length : 0;
+					if (indent <= baseIndent && lineStr.match(/^([ \t]*)[-*+]/)) break;
+					if (indent <= baseIndent && lineStr.trim() !== "") break;
+					i++;
+				}
+				return i - startLine;
+			};
+
+			const sourceLine = sourceTask.line;
+			let targetLine = targetTask.line;
+			
+			const sourceLength = getBlockLength(sourceLine);
+			const targetLength = getBlockLength(targetLine);
+			
+			const sourceBlock = lines.splice(sourceLine, sourceLength);
+			
+			if (sourceLine < targetLine) {
+				targetLine -= sourceLength;
+			}
+			
+			let insertIndex = dropPosition === "top" ? targetLine : targetLine + targetLength;
+			
+			const targetLineContent = lines[targetLine < lines.length ? targetLine : lines.length - 1];
+			const targetIndentMatch = targetLineContent ? targetLineContent.match(/^([ \t]*)/) : null;
+			const targetIndentStr: string = (targetIndentMatch && targetIndentMatch[1]) ? targetIndentMatch[1] : "";
+			const sourceIndentMatch = sourceBlock[0] ? sourceBlock[0].match(/^([ \t]*)/) : null;
+			const sourceIndentStr: string = (sourceIndentMatch && sourceIndentMatch[1]) ? sourceIndentMatch[1] : "";
+			
+			if (targetIndentStr !== sourceIndentStr) {
+				for (let i = 0; i < sourceBlock.length; i++) {
+					const blockStr = sourceBlock[i];
+					if (blockStr !== undefined && blockStr.startsWith(sourceIndentStr)) {
+						sourceBlock[i] = targetIndentStr + blockStr.substring(sourceIndentStr.length);
+					}
+				}
+			}
+
+			lines.splice(insertIndex, 0, ...sourceBlock);
+			return lines.join('\n');
+		});
+		
+		await this.loadTasks();
+		void this.renderTaskList();
 	}
 
 	private renderKanban(filteredTasks: TaskItem[]) {
@@ -1324,7 +1509,6 @@ export class TaskView {
 		const dateMatch = displayText.match(/(\d{4}-\d{2}-\d{2})/);
 		const taskDate = dateMatch ? dateMatch[1] : null;
 
-		let urgencyMatch = null;
 		let isUrgent = false;
 		let isImportant = false;
 
@@ -1409,27 +1593,39 @@ export class TaskView {
 		}
 
 		if (task.recur) {
-			const recurBadge = metaDiv.createSpan();
-			recurBadge.setCssProps({ "display": "flex", "align-items": "center", "gap": "4px", "color": "var(--text-muted)", "background": "var(--background-modifier-hover)", "padding": "2px 6px", "border-radius": "6px", "font-size": "0.9em" })
-			const recurIcon = recurBadge.createSpan();
-			setIcon(recurIcon, "refresh-cw");
-			(recurIcon.querySelector("svg") as SVGElement)?.setAttribute("width", "12");
-			(recurIcon.querySelector("svg") as SVGElement)?.setAttribute("height", "12");
-			if (task.recur !== "~") {
-				recurBadge.createSpan({ text: task.recur });
+			const shouldShowRecurText = task.recur !== "~" && task.recur !== taskDate;
+			const shouldShowRecurIconOnly = task.recur === "~";
+			
+			if (shouldShowRecurText || shouldShowRecurIconOnly) {
+				const recurBadge = metaDiv.createSpan();
+				recurBadge.setCssProps({ "display": "flex", "align-items": "center", "gap": "4px", "color": "var(--text-muted)", "background": "var(--background-modifier-hover)", "padding": "2px 6px", "border-radius": "6px", "font-size": "0.9em" })
+				const recurIcon = recurBadge.createSpan();
+				setIcon(recurIcon, "refresh-cw");
+				(recurIcon.querySelector("svg") as SVGElement)?.setAttribute("width", "12");
+				(recurIcon.querySelector("svg") as SVGElement)?.setAttribute("height", "12");
+				if (shouldShowRecurText) {
+					recurBadge.createSpan({ text: task.recur });
+				}
 			}
 		}
 
-		const folderBadge = metaDiv.createSpan();
-		folderBadge.setCssProps({ "display": "flex", "align-items": "center", "gap": "4px", "color": "var(--text-faint)", "font-size": "0.9em" })
-		const folderIcon = folderBadge.createSpan();
-		
 		const isDateFile = /^\d{4}-\d{2}-\d{2}$/.test(task.file.basename);
-		setIcon(folderIcon, isDateFile ? "calendar" : "file-text");
-		
-		(folderIcon.querySelector("svg") as SVGElement)?.setAttribute("width", "12");
-		(folderIcon.querySelector("svg") as SVGElement)?.setAttribute("height", "12");
-		folderBadge.createSpan({ text: task.file.basename });
+		let shouldShowFolder = true;
+		if (isKanbanCard && isDateFile) {
+			shouldShowFolder = false;
+		}
+
+		if (shouldShowFolder) {
+			const folderBadge = metaDiv.createSpan();
+			folderBadge.setCssProps({ "display": "flex", "align-items": "center", "gap": "4px", "color": "var(--text-faint)", "font-size": "0.9em" })
+			const folderIcon = folderBadge.createSpan();
+			
+			setIcon(folderIcon, isDateFile ? "calendar" : "file-text");
+			
+			(folderIcon.querySelector("svg") as SVGElement)?.setAttribute("width", "12");
+			(folderIcon.querySelector("svg") as SVGElement)?.setAttribute("height", "12");
+			folderBadge.createSpan({ text: task.file.basename });
+		}
 
 		// Click to open file
 		item.onclick = (e) => {
@@ -1462,7 +1658,7 @@ export class TaskView {
 			const parentId = parentMatch[1];
 			const parentTask = this.tasks.find(t => t.id === parentId);
 			if (parentTask && parentTask.file instanceof TFile) {
-				await await this.app.vault.process(parentTask.file, (content) => {
+				await this.app.vault.process(parentTask.file, (content) => {
 					const lines = content.split('\n');
 					let parentLineIdx = lines.findIndex(l => l.includes(`%%id:${parentId}%%`));
 					if (parentLineIdx === -1) parentLineIdx = parentTask.line;
@@ -1484,8 +1680,6 @@ export class TaskView {
 										insertIdx++;
 										continue;
 									}
-									const nextIndentMatch = nextLine.match(/^(\s*)/);
-									const nextIndent = nextIndentMatch ? nextIndentMatch[1] : "";
 									
 									if (nextLine.startsWith(parentIndent) && nextLine.length > parentIndent.length && /^\s/.test(nextLine.substring(parentIndent.length))) {
 										insertIdx++;

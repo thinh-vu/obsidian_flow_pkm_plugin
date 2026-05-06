@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
 import { App, setIcon } from "obsidian";
 import type * as echartsCore from "echarts/core";
 import type { EChartsOption } from "echarts";
@@ -203,9 +202,10 @@ export class StatisticsView {
 			this.selectedPropertyCategory = hasProgress ? "progress" : (treemapData[0]?.name || null);
 		}
 
-		this.chartInstanceLeft.on("click", (params: any) => {
-			if (params.name) {
-				this.selectedPropertyCategory = params.name;
+		this.chartInstanceLeft.on("click", (params) => {
+			const p = params as { name?: string; data?: { path?: string } };
+			if (p.name) {
+				this.selectedPropertyCategory = p.name;
 				this.updatePropertiesDetailChart(stats);
 			}
 		});
@@ -249,9 +249,10 @@ export class StatisticsView {
 		this.chartInstanceRight.setOption(rightOption, true);
 
 		this.chartInstanceRight.off("click");
-		this.chartInstanceRight.on("click", (params: any) => {
-			if (params.name) {
-				const linktext = extractWikilinkName(String(params.name));
+		this.chartInstanceRight.on("click", (params) => {
+			const p = params as { name?: string; data?: { path?: string } };
+			if (p.name) {
+				const linktext = extractWikilinkName(String(p.name));
 				const file = this.app.metadataCache.getFirstLinkpathDest(linktext, "");
 				if (file) {
 					void this.app.workspace.getLeaf(false).openFile(file);
@@ -307,8 +308,8 @@ export class StatisticsView {
 		const endYear = new Date(endDate).getFullYear();
 		const maxVal = Math.max(...data.map(d => d[1] as number));
 
-		const calendars: any[] = [];
-		const series: any[] = [];
+		const calendars: Record<string, unknown>[] = [];
+		const series: Record<string, unknown>[] = [];
 
 		for (let y = startYear; y <= endYear; y++) {
 			const calIndex = y - startYear;
@@ -334,7 +335,7 @@ export class StatisticsView {
 
 		return {
 			title: { text: isVi ? "Biểu đồ hoạt động" : "Activity Heatmap", left: "center", top: 10, textStyle: { fontSize: 14 } },
-			tooltip: { formatter: (params: any) => `${params.value[0]}: <b>${params.value[1]}</b> note(s)` },
+			tooltip: { formatter: (params) => { const p = params as unknown as { value: [string, number] }; return `${p.value[0]}: <b>${p.value[1]}</b> note(s)`; } },
 			visualMap: {
 				min: 0,
 				max: maxVal,
@@ -345,8 +346,8 @@ export class StatisticsView {
 				inRange: { color: [...HEATMAP_RAMP] },
 				textStyle: { fontSize: 11 },
 			},
-			calendar: calendars.length === 1 ? calendars[0] : calendars,
-			series: series,
+			calendar: calendars.length === 1 ? calendars[0]! : calendars,
+			series: series as unknown as EChartsOption["series"],
 		};
 	}
 
@@ -377,9 +378,9 @@ export class StatisticsView {
 			title: { text: isVi ? "Hoạt động theo thứ trong tuần" : "Activity by Day of Week", left: "center", top: 10, textStyle: { fontSize: 14 } },
 			tooltip: {
 				trigger: "axis",
-				formatter: (params: any) => {
-					const p = Array.isArray(params) ? params[0] : params;
-					return `${p.name}: <b>${p.value}</b> ${isVi ? "hoạt động" : "activity events"}`;
+					formatter: (params) => {
+					const p = (Array.isArray(params) ? params[0] : params) as { name?: string; value?: number | number[] };
+					return `${p.name || ""}: <b>${String(p.value || "")}</b> ${isVi ? "hoạt động" : "activity events"}`;
 				},
 			},
 			grid: { left: "10%", right: "10%", bottom: "15%", top: "20%" },
@@ -424,8 +425,8 @@ export class StatisticsView {
 			const allFeelings = Object.keys(stats.feelingCounts).sort();
 			const feelingColors = [...FEELING_PALETTE];
 
-			const series: any[] = allFeelings.map((feeling, idx) => {
-				const data: any[] = [];
+			const series: Record<string, unknown>[] = allFeelings.map((feeling, idx) => {
+				const data: Record<string, unknown>[] = [];
 				for (const date of feelingDates) {
 					const fArr = feelingByDate[date] || [];
 					if (fArr.includes(feeling)) {
@@ -446,9 +447,10 @@ export class StatisticsView {
 				title: { text: isVi ? "Dòng thời gian cảm xúc" : "Feeling Timeline", left: "center", top: 10, textStyle: { fontSize: 14 } },
 				tooltip: {
 					trigger: "item",
-					formatter: (params: any) => {
-						const date = formatDate(params.value[0]);
-						return `<b>${date}</b><br/>${params.seriesName}`;
+						formatter: (params) => {
+						const p = params as { name: string; value: number[]; seriesName: string };
+						const date = formatDate(String(p.value[0]));
+						return `<b>${date}</b><br/>${p.seriesName}`;
 					},
 				},
 				legend: { bottom: 40, type: "scroll", textStyle: { fontSize: 12 } },
@@ -486,9 +488,9 @@ export class StatisticsView {
 			title: { text: "Mood Score Over Time", left: "center", top: 10, textStyle: { fontSize: 14 } },
 			tooltip: {
 				trigger: "axis",
-				formatter: (params: any) => {
-					const p = Array.isArray(params) ? params[0] : params;
-					return `<b>${formatDate(p.name)}</b><br/>Mood: ${p.value}`;
+				formatter: (params) => {
+					const p = (Array.isArray(params) ? params[0] : params) as { name?: string; value?: number | number[] };
+					return `<b>${formatDate(String(p.name || ""))}</b><br/>Mood: ${String(p.value || "")}`;
 				},
 			},
 			grid: { left: "10%", right: "5%", bottom: "20%", top: "15%" },

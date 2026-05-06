@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable obsidianmd/ui/sentence-case */
 import { Setting, Notice, AbstractInputSuggest, App, TFile } from "obsidian";
 import type FlowPlugin from "../../main";
 import { FLOW_ROLE_ORDER, FLOW_ROLE_DESCRIPTIONS, FlowPluginSettings } from "../../types";
@@ -116,7 +114,7 @@ export class GeneralTab {
 				dropdown.addOption("file", isVi ? "Mở 1 file cố định" : "Open specific file");
 				dropdown.setValue(this.plugin.settings.startupAction || "none");
 				dropdown.onChange(async (value) => {
-					this.plugin.settings.startupAction = value as any;
+					this.plugin.settings.startupAction = value as FlowPluginSettings["startupAction"];
 					await this.plugin.saveSettings();
 					this.settingTab.display();
 				});
@@ -168,10 +166,10 @@ export class GeneralTab {
 					await this.plugin.saveSettings();
 					if (value) {
 						this.plugin.enableTOCWatcher();
-						new Notice("FLOW: Auto-TOC watcher enabled.");
+						new Notice("Flow: auto-toc watcher enabled.");
 					} else {
 						this.plugin.disableTOCWatcher();
-						new Notice("FLOW: Auto-TOC watcher disabled.");
+						new Notice("Flow: auto-toc watcher disabled.");
 					}
 				});
 			});
@@ -236,7 +234,7 @@ export class GeneralTab {
 							);
 
 							if (selectedRoles.length === 0) {
-								new Notice("FLOW: No folders selected for TOC generation.");
+								new Notice("Flow: no folders selected for toc generation.");
 								return;
 							}
 
@@ -287,7 +285,7 @@ export class GeneralTab {
 					const input = document.createElement("input");
 					input.type = "file";
 					input.accept = ".json";
-					input.onchange = async (e) => {
+					input.onchange = (e) => {
 						const file = (e.target as HTMLInputElement).files?.[0];
 						if (file) {
 							const reader = new FileReader();
