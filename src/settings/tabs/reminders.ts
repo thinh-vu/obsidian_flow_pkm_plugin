@@ -1,4 +1,4 @@
-/* eslint-disable obsidianmd/ui/sentence-case */
+ 
 import { Setting, Notice } from "obsidian";
 import type FlowPlugin from "../../main";
 import type { RemindersSettings } from "../../types";
@@ -69,10 +69,10 @@ export class RemindersTab {
 				})
 				.addButton((button) => {
 					button
-						.setButtonText("🔔 Test")
+						.setButtonText("Test")
 						.setTooltip("Preview this reminder — fires in 3s")
 						.onClick(() => {
-							new Notice("⏳ Test notification will fire in 3 seconds...");
+							new Notice("Test notification will fire in 3 seconds...");
 							const msg = REMINDER_MESSAGES[reminderKey];
 							setTimeout(() => {
 								// Always show an internal notice to ensure visibility

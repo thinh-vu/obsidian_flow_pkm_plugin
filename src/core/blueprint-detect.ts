@@ -4,7 +4,7 @@
  * Used by both Settings tab and Dashboard modal.
  */
 
-import { TFile, TFolder, Vault } from "obsidian";
+import { TFile, Vault } from "obsidian";
 import { FlowFolderMap, FlowRole, VaultMission } from "../types";
 import { findExistingFlowFolder } from "./folder-manager";
 import { FLOW_PRESETS } from "../constants";

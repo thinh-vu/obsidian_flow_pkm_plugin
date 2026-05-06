@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/await-thenable */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any */
 import { App, setIcon, TFile } from "obsidian";
 import { FlowPluginSettings, FlowRole } from "../../../types";
 import { VaultStats, extractWikilinkName } from "../stats-collector";
@@ -444,7 +444,7 @@ export class NavigatorView {
 				const tag = inp.value.trim().replace(/^#/, "");
 				if (!tag) return;
 				for (const f of selectedFiles) {
-					await void (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
+					await (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
 						if (!fm.tags) fm.tags = [];
 						if (!Array.isArray(fm.tags)) fm.tags = [String(fm.tags)];
 						if (!fm.tags.includes(tag)) fm.tags.push(tag);
@@ -478,7 +478,7 @@ export class NavigatorView {
 				const val = valInp.value.trim();
 				if (!key) return;
 				for (const f of selectedFiles) {
-					await void (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
+					await (this.app as any).fileManager.processFrontMatter(f, (fm: any) => {
 						fm[key] = val;
 					});
 				}

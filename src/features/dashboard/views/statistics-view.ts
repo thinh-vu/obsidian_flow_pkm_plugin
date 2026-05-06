@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/await-thenable */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
 import { App, setIcon } from "obsidian";
 import type * as echartsCore from "echarts/core";
 import type { EChartsOption } from "echarts";
 import { FlowPluginSettings } from "../../../types";
 import { VaultStats, extractWikilinkName } from "../stats-collector";
-import { CHART_PALETTE, WARM_CHART_PALETTE, HEATMAP_RAMP, ACTIVITY_COLOR, ACTIVITY_AREA, ACTIVITY_AVGLINE, FEELING_PALETTE, BRAND } from "../../../brand-colors";
+import { HEATMAP_RAMP, ACTIVITY_COLOR, ACTIVITY_AREA, ACTIVITY_AVGLINE, FEELING_PALETTE, BRAND } from "../../../brand-colors";
 
 type DashboardTab = "properties" | "tags" | "activity" | "mood";
 

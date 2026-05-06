@@ -1,7 +1,7 @@
 import { App, setIcon } from "obsidian";
 import { VaultStats } from "../stats-collector";
 import { FlowPluginSettings, FlowRole } from "../../../types";
-import { computeAllHealthScores, StageHealthResult, CriterionResult } from "../health-scorer";
+import { computeAllHealthScores, StageHealthResult } from "../health-scorer";
 import { STAGE_COLORS, HEALTH_COLORS, BRAND } from "../../../brand-colors";
 
 // ── i18n ─────────────────────────────────────────────────────────────────

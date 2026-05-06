@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/await-thenable */
-/* eslint-disable obsidianmd/ui/sentence-case */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/await-thenable */
+ 
 import { App, setIcon, TFile, moment, Notice, Platform } from "obsidian";
 import { FlowPluginSettings, FlowRole } from "../../../types";
 import { VaultStats } from "../stats-collector";
@@ -562,13 +562,13 @@ export class TaskView {
 		const listBtn = viewToggleWrapper.createEl("button");
 		setIcon(listBtn, "list");
 		listBtn.setCssProps({ "display": `flex`, "align-items": `center`, "justify-content": `center`, "padding": `4px 8px`, "border-radius": `4px`, "border": `none`, "cursor": `pointer`, "color": `var(--text-normal)`, "transition": `all 0.2s ease`, "background": `${this.viewMode === 'list' ? 'var(--background-primary)' : 'transparent'}`, "box-shadow": `${this.viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'}` })
-		listBtn.title = "List View";
+		listBtn.title = "List view";
 		listBtn.onclick = () => { this.viewMode = 'list'; this.renderToolbar(); void this.renderTaskList(); };
 
 		const kanbanBtn = viewToggleWrapper.createEl("button");
 		setIcon(kanbanBtn, "columns");
 		kanbanBtn.setCssProps({ "display": `flex`, "align-items": `center`, "justify-content": `center`, "padding": `4px 8px`, "border-radius": `4px`, "border": `none`, "cursor": `pointer`, "color": `var(--text-normal)`, "transition": `all 0.2s ease`, "background": `${this.viewMode === 'kanban' ? 'var(--background-primary)' : 'transparent'}`, "box-shadow": `${this.viewMode === 'kanban' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'}` })
-		kanbanBtn.title = "Kanban View";
+		kanbanBtn.title = "Kanban view";
 		kanbanBtn.onclick = () => { this.viewMode = 'kanban'; this.renderToolbar(); void this.renderTaskList(); };
 
 		const createFilterGroupBtn = (groupLabel: string, groupIcon: string, items: { label: string; value: string; icon?: string }[], currentValues: string[], onChange: (vals: string[]) => void) => {
@@ -1126,7 +1126,7 @@ export class TaskView {
 	}
 
 	private async setTaskStatus(file: TFile, lineNum: number, statusChar: string) {
-		await void this.app.vault.process(file, (content) => {
+		await this.app.vault.process(file, (content) => {
 			const lines = content.split('\n');
 			if (lines[lineNum] !== undefined) {
 				const line = lines[lineNum];
@@ -1137,7 +1137,7 @@ export class TaskView {
 	}
 
 	private async deleteTask(file: TFile, lineNum: number) {
-		await void this.app.vault.process(file, (content) => {
+		await this.app.vault.process(file, (content) => {
 			const lines = content.split('\n');
 			if (lines[lineNum] !== undefined) {
 				lines.splice(lineNum, 1);
@@ -1147,7 +1147,7 @@ export class TaskView {
 	}
 
 	private async updateTaskText(file: TFile, lineNum: number, newText: string) {
-		await void this.app.vault.process(file, (content) => {
+		await this.app.vault.process(file, (content) => {
 			const lines = content.split('\n');
 			if (lines[lineNum] !== undefined) {
 				const line = lines[lineNum];
@@ -1221,7 +1221,7 @@ export class TaskView {
 					task.status = col.id;
 					void this.renderTaskList();
 					
-					await void this.app.vault.process(task.file, (content) => {
+					await this.app.vault.process(task.file, (content) => {
 						const lines = content.split('\n');
 						const targetLine = lines[task.line];
 						if (targetLine !== undefined) {
@@ -1307,7 +1307,7 @@ export class TaskView {
 				void this.renderTaskList(); // Simple re-render
 			}
 			
-			await void this.app.vault.process(task.file, (content) => {
+			await this.app.vault.process(task.file, (content) => {
 				const lines = content.split('\n');
 				const targetLine = lines[task.line];
 				if (targetLine !== undefined) {
@@ -1462,7 +1462,7 @@ export class TaskView {
 			const parentId = parentMatch[1];
 			const parentTask = this.tasks.find(t => t.id === parentId);
 			if (parentTask && parentTask.file instanceof TFile) {
-				await await void this.app.vault.process(parentTask.file, (content) => {
+				await await this.app.vault.process(parentTask.file, (content) => {
 					const lines = content.split('\n');
 					let parentLineIdx = lines.findIndex(l => l.includes(`%%id:${parentId}%%`));
 					if (parentLineIdx === -1) parentLineIdx = parentTask.line;
@@ -1515,7 +1515,7 @@ export class TaskView {
 
 		if (file instanceof TFile) {
 			// Append to existing
-			await void this.app.vault.process(file, (content) => {
+			await this.app.vault.process(file, (content) => {
 				const lines = content.split('\n');
 				const taskLine = `- [ ] ${text}`;
 				
@@ -1539,7 +1539,7 @@ export class TaskView {
 				await this.app.vault.create(filePath, content);
 			} catch (e) {
 				console.error("Failed to create file:", e);
-				new Notice("FLOW: Failed to create daily note for task.");
+				new Notice("Failed to create daily note for task.");
 			}
 		}
 	}

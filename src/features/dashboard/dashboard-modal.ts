@@ -5,7 +5,7 @@
  */
 
 import { App, Modal, setIcon } from "obsidian";
-import type * as echarts from "echarts/core";
+// import type * as echarts from "echarts/core";
 import { FlowPluginSettings, FlowRole } from "../../types";
 import { VaultStats, collectVaultStats, invalidateStatsCache } from "./stats-collector";
 import { renderFlowProgressionTab } from "./tabs/flow-progression";

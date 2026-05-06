@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable obsidianmd/ui/sentence-case */
 import { Setting, Notice, AbstractInputSuggest, App, TFile } from "obsidian";
 import type FlowPlugin from "../../main";
@@ -80,8 +80,8 @@ export class GeneralTab {
 			.setName(L.pluginLanguage)
 			.setDesc(L.pluginLanguageDesc)
 			.addDropdown((dropdown) => {
-				dropdown.addOption("vi", "🇻🇳 Tiếng việt");
-				dropdown.addOption("en", "🇺🇸 English");
+				dropdown.addOption("vi", "Tiếng việt");
+				dropdown.addOption("en", "English");
 				dropdown.setValue(this.plugin.settings.language || "vi");
 				dropdown.onChange(async (value) => {
 					this.plugin.settings.language = value as "vi" | "en";
@@ -139,7 +139,7 @@ export class GeneralTab {
 
 		new Setting(section)
 			.setName("Cấp độ zen mode (mặc định)")
-			.setDesc("0: Tắt. 1: Ẩn Ribbon, Title bar, Tabs, Vault profile. 2: Ẩn thêm cả hai Sidebars.")
+			.setDesc("0: tắt. 1: ẩn ribbon, title bar, tabs, vault profile. 2: ẩn thêm cả hai sidebars.")
 			.addDropdown((dropdown) => {
 				dropdown
 					.addOption("0", "Tắt (off)")
@@ -318,7 +318,7 @@ export class GeneralTab {
 		});
 
 		new Setting(templateSection)
-			.setName("Learn Anything")
+			.setName("Learn anything")
 			.setDesc("https://learn-anything.vn/download-obsidian-flow")
 			.addButton((button) => {
 				button

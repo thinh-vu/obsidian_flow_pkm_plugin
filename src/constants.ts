@@ -426,7 +426,7 @@ export function detectCurrentPreset(rootFolderNames: string[]): { presetId: stri
 
 	for (const preset of FLOW_PRESETS) {
 		const presetNames = Object.values(preset.folders);
-		const presetBareNames = presetNames.map(stripPrefix);
+		// const presetBareNames = presetNames.map(stripPrefix);
 
 		// Check if all 6 preset folder names exist in the vault (with or without numbers)
 		let matched = true;

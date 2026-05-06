@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable obsidianmd/ui/sentence-case */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access */
+ 
 import { App, setIcon } from "obsidian";
 import type * as echartsCore from "echarts/core";
 import type { EChartsOption } from "echarts";
@@ -99,7 +99,7 @@ export class TaxonomyView {
 			const warmPalette = [...WARM_CHART_PALETTE];
 			const sunburstOption: EChartsOption = {
 				backgroundColor: "transparent",
-				title: { text: isVi ? "Hệ thống thẻ" : "Tag Hierarchy", left: "center", top: 10, textStyle: { fontSize: 14 } },
+				title: { text: isVi ? "Hệ thống thẻ" : "Tag hierarchy", left: "center", top: 10, textStyle: { fontSize: 14 } },
 				tooltip: { trigger: "item", formatter: "{b}" },
 				color: warmPalette,
 				series: [{
@@ -121,7 +121,7 @@ export class TaxonomyView {
 		} else {
 			const emptyTag = this.container.createDiv();
 			emptyTag.addClass("flow-dashboard-ui-19");
-			emptyTag.setText("No tags found in your vault. Add tags to your notes or register a tag hierarchy in Settings → FLOW → Taxonomy.");
+			emptyTag.setText("No tags found in your vault. Add tags to your notes or register a tag hierarchy in settings.");
 		}
 
 		// ── Middle: Properties by Dimension Chart ──
@@ -185,7 +185,7 @@ export class TaxonomyView {
 			if (treemapData.length > 0) {
 				const dimOption: EChartsOption = {
 					backgroundColor: "transparent",
-					title: { text: isVi ? "Thuộc tính theo phân loại" : "Properties by Dimension", left: "center", top: 50, textStyle: { fontSize: 14 } },
+					title: { text: isVi ? "Thuộc tính theo phân loại" : "Properties by dimension", left: "center", top: 50, textStyle: { fontSize: 14 } },
 					tooltip: {
 						formatter: (params: any) => {
 							const treePathInfo = ((params as { treePathInfo?: { name?: string }[] }).treePathInfo) || [];
@@ -223,13 +223,13 @@ export class TaxonomyView {
 		const missionBoard = this.container.createDiv();
 		missionBoard.addClass("flow-taxonomy-mission-padding");
 
-		const mTitle = missionBoard.createEl("h4", { text: "🎯 Blueprints" });
+		const mTitle = missionBoard.createEl("h4", { text: "Blueprints" });
 		mTitle.addClass("flow-taxonomy-mission-title");
 
 		if (missions.length === 0) {
 			const emptyM = missionBoard.createDiv();
 			emptyM.addClass("flow-dashboard-ui-21");
-			emptyM.setText("No missions defined. Go to Settings → FLOW → Taxonomy to create your first mission.");
+			emptyM.setText("No missions defined. Go to settings to create your first mission.");
 		} else {
 			const grid = missionBoard.createDiv();
 			grid.addClass("flow-dashboard-ui-22");

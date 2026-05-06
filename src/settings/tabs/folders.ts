@@ -1,4 +1,4 @@
-/* eslint-disable obsidianmd/ui/sentence-case */
+ 
 import { Setting, Notice } from "obsidian";
 import type FlowPlugin from "../../main";
 import { FLOW_PRESETS, getPresetById, applyPrefixFormat } from "../../constants";
@@ -91,7 +91,7 @@ export class FoldersTab {
 							this.plugin.settings.folderMap
 						);
 						if (created.length === 0) {
-							new Notice("FLOW: all folders already exist.");
+							new Notice("Flow: all folders already exist.");
 						}
 					}
 				});
@@ -108,10 +108,10 @@ export class FoldersTab {
 					await this.plugin.saveSettings();
 					if (value) {
 						this.plugin.reinstallSort();
-						new Notice("FLOW: custom sort enabled.");
+						new Notice("Flow: custom sort enabled.");
 					} else {
 						this.plugin.uninstallSort();
-						new Notice("FLOW: custom sort disabled.");
+						new Notice("Flow: custom sort disabled.");
 					}
 				});
 			});

@@ -56,7 +56,7 @@ export default class FlowPlugin extends Plugin {
 		// ── Commands ─────────────────────────────────────────
 		this.addCommand({
 			id: "flow-create-folders",
-			name: "Create missing FLOW folders",
+			name: "Create missing flow folders",
 			callback: async () => {
 				const { createMissingFlowFolders } = await import("./core/folder-manager");
 				const created = await createMissingFlowFolders(
@@ -64,14 +64,14 @@ export default class FlowPlugin extends Plugin {
 					this.settings.folderMap
 				);
 				if (created.length === 0) {
-					new Notice("FLOW: All folders already exist.");
+					new Notice("Flow: all folders already exist.");
 				}
 			},
 		});
 
 		this.addCommand({
 			id: "flow-open-dashboard",
-			name: "Open FLOW dashboard",
+			name: "Open flow dashboard",
 			callback: async () => {
 				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 				new DashboardModal(this.app, this.settings).open();
@@ -80,7 +80,7 @@ export default class FlowPlugin extends Plugin {
 
 		this.addCommand({
 			id: "flow-open-dashboard-tasks",
-			name: "Open FLOW dashboard (tasks)",
+			name: "Open flow dashboard (tasks)",
 			callback: async () => {
 				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 				new DashboardModal(this.app, this.settings, "tasks").open();
@@ -89,7 +89,7 @@ export default class FlowPlugin extends Plugin {
 
 		this.addCommand({
 			id: "flow-open-dashboard-stats",
-			name: "Open FLOW dashboard (statistics)",
+			name: "Open flow dashboard (statistics)",
 			callback: async () => {
 				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 				new DashboardModal(this.app, this.settings, "statistics").open();
@@ -98,7 +98,7 @@ export default class FlowPlugin extends Plugin {
 
 		this.addCommand({
 			id: "flow-open-dashboard-navigator",
-			name: "Open FLOW dashboard (navigator)",
+			name: "Open flow dashboard (navigator)",
 			callback: async () => {
 				const { DashboardModal } = await import("./features/dashboard/dashboard-modal");
 				new DashboardModal(this.app, this.settings, "navigator").open();
@@ -114,7 +114,7 @@ export default class FlowPlugin extends Plugin {
 		});
 		this.addCommand({
 			id: "flow-open-task-sidebar",
-			name: "Open FLOW task sidebar",
+			name: "Open flow task sidebar",
 			callback: async () => {
 				await this.activateTaskSidebar();
 			},
@@ -374,7 +374,7 @@ export default class FlowPlugin extends Plugin {
 			);
 		} else if (force) {
 			new Notice(
-				"FLOW: Could not detect a matching preset from vault folders."
+				"Flow: could not detect a matching preset from vault folders."
 			);
 		}
 	}

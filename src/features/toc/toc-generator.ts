@@ -5,7 +5,7 @@
  * either a static file listing or DataView query blocks.
  */
 
-import { Notice, TFile, TFolder, Vault } from "obsidian";
+import { TFile, TFolder, Vault } from "obsidian";
 import { FlowFolderMap, FlowRole, FLOW_ROLE_ORDER } from "../../types";
 import { findExistingFlowFolder } from "../../core/folder-manager";
 
@@ -63,7 +63,7 @@ function buildTOCContent(
 	vault: Vault,
 	useDataView: boolean
 ): string {
-	const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+	// const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
 
 	const lines: string[] = [
 		`---`,

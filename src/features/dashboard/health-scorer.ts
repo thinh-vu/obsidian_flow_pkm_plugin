@@ -5,7 +5,7 @@
  * Three levels: 🔴 Basic (0–40), 🟡 Good (41–70), 🟢 Advanced (71–100).
  */
 
-import { FlowPluginSettings, FlowRole, VaultMission } from "../../types";
+import { FlowPluginSettings, FlowRole } from "../../types";
 import { VaultStats, RoleStats } from "./stats-collector";
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ function folderOrgScore(rs: RoleStats, maxPts: number, settings: FlowPluginSetti
 
 function scoreBlueprint(rs: RoleStats, stats: VaultStats, settings: FlowPluginSettings): StageHealthResult {
 	const missions = settings.vaultMissions || [];
-	const activeMissions = missions.filter(m => m.status === "active");
+	// const activeMissions = missions.filter(m => m.status === "active");
 
 	// 1. Mission defined (25)
 	const c1 = criterion("Missions Defined", "Nhiệm vụ được định nghĩa",

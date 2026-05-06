@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/await-thenable */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
 /**
  * FLOW Vault Statistics Collector — v2 (Single-Pass Flat-Index).
  *
@@ -10,7 +10,7 @@
  * Performance target: < 100ms for 10,000+ file vaults.
  */
 
-import { App, TFile, getAllTags } from "obsidian";
+import { App, getAllTags } from "obsidian";
 import { FlowFolderMap, FlowRole, FlowPluginSettings } from "../../types";
 
 // ── Exported Interfaces ─────────────────────────────────────────────────
